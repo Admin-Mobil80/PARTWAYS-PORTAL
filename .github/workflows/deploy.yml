@@ -18,13 +18,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      # Repository VARIABLES (not secrets): the partways-portal stack outputs
-      # from PARTWAYS-BACKEND infra. None of them is secret.
-      ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-      REGION: ${{ vars.AWS_REGION }}
-      BUCKET: ${{ vars.S3_BUCKET }}
-      PREFIX: ${{ vars.S3_PREFIX }}
-      DISTRIBUTION: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+      # Defaults are the partways-portal stack outputs (PARTWAYS-BACKEND infra);
+      # none is secret. A repository VARIABLE of the same name overrides one.
+      ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN || 'arn:aws:iam::720771544607:role/partways-portal-github-deploy' }}
+      REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      BUCKET: ${{ vars.S3_BUCKET || 'webapps.partways.org' }}
+      PREFIX: ${{ vars.S3_PREFIX || 'PORTAL' }}
+      DISTRIBUTION: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID || 'E22ONO2YFDGDK9' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +39,7 @@ jobs:
           if [ -z "$PREFIX" ]; then missing="$missing S3_PREFIX"; fi
           if [ -z "$DISTRIBUTION" ]; then missing="$missing CLOUDFRONT_DISTRIBUTION_ID"; fi
           if [ -n "$missing" ]; then
-            echo "::error title=Deploy not configured::Missing repository variables:$missing. Set them under Settings > Secrets and variables > Actions > Variables, using the values shown in the partways-portal stack outputs (PARTWAYS-BACKEND infra)."
+            echo "::error title=Deploy not configured::Missing:$missing. Set them as repository variables, using the partways-portal stack outputs (PARTWAYS-BACKEND infra)."
             exit 1
           fi
           printf '%-28s %s\n' AWS_REGION "$REGION" S3_BUCKET "$BUCKET" S3_PREFIX "$PREFIX" CLOUDFRONT_DISTRIBUTION_ID "$DISTRIBUTION"
@@ -57,8 +57,8 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
 
       # The bucket holds every PartWays web app, so the destination is this
       # app's folder and --delete never reaches a sibling. The deploy role is
