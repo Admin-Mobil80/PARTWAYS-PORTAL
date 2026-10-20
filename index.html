@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PartWays · Independent AI exit interviews</title>
+  <meta name="description" content="Independent exit interviews by voice or text. Departing employees review their own summary, every answer is de-identified, and HR gets findings it can act on. Start with 3 free interviews.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    body { background: var(--surface); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+    .site-head { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .site-head .wrap { display: flex; align-items: center; gap: 1rem; min-height: 60px; }
+    .site-head nav { display: flex; gap: 1.25rem; margin-left: auto; font-size: .92rem; }
+    .site-head nav a { color: var(--ink-2); text-decoration: none; }
+    .site-head nav a:hover { color: var(--ink); }
+    .head-cta { display: flex; gap: .5rem; }
+    @media (max-width: 760px) { .site-head nav { display: none; } .head-cta { margin-left: auto; } }
+
+    section { padding: 4rem 0; }
+    .eyebrow { font-size: .8rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 .6rem; }
+    h2.big { font-size: clamp(1.5rem, 3.6vw, 2.1rem); letter-spacing: -.015em; margin: 0 0 .75rem; }
+    .lede { font-size: 1.08rem; color: var(--ink-2); max-width: 680px; }
+
+    .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 3rem; align-items: center; padding: 4.5rem 0 3.5rem; }
+    .hero h1 { font-size: clamp(2rem, 5.2vw, 3.1rem); line-height: 1.08; letter-spacing: -.025em; margin: 0 0 1rem; }
+    .hero p.sub { font-size: 1.15rem; color: var(--ink-2); margin: 0 0 1.5rem; }
+    .hero .fine { margin-top: .8rem; font-size: .85rem; color: var(--muted); }
+    @media (max-width: 880px) { .hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 3rem; } }
+
+    .mock { display: grid; gap: .9rem; }
+    .signup { padding: 1.4rem; box-shadow: var(--shadow); }
+    .signup .field { margin: 0; }
+    .how-intro { display: grid; grid-template-columns: 1.2fr .8fr; gap: 2.5rem; align-items: start; }
+    @media (max-width: 880px) { .how-intro { grid-template-columns: 1fr; } }
+    #signup { scroll-margin-top: 80px; }
+    .phone { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 1rem; box-shadow: var(--shadow); }
+    .phone .from { font-size: .75rem; color: var(--muted); margin-bottom: .45rem; display: flex; justify-content: space-between; }
+    .bubble { background: #dcf8c6; color: #111; border-radius: 12px 12px 12px 4px; padding: .7rem .85rem; font-size: .88rem; line-height: 1.45; }
+    :root[data-theme="dark"] .bubble { background: #1f3b2d; color: #e8f5ec; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bubble { background: #1f3b2d; color: #e8f5ec; } }
+    .bubble .link { color: #0a66c2; text-decoration: underline; }
+    .summary { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow); }
+    .summary h4 { margin: 0 0 .5rem; font-size: .9rem; }
+    .summary ul { margin: 0; padding-left: 1.1rem; font-size: .88rem; color: var(--ink-2); display: grid; gap: .3rem; }
+    .summary .foot { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .75rem; }
+
+    .strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--panel); padding: 1rem 0; }
+    .strip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .6rem 2rem; justify-content: center; font-size: .9rem; color: var(--ink-2); font-weight: 550; }
+    .strip li::before { content: "✓"; color: var(--good); margin-right: .45rem; }
+
+    .steps4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; counter-reset: s; list-style: none; padding: 0; margin: 2rem 0 0; }
+    .steps4 li { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem; counter-increment: s; }
+    .steps4 li::before { content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: .85rem; margin-bottom: .6rem; }
+    .steps4 h3 { font-size: 1rem; margin: 0 0 .35rem; }
+    .steps4 p { margin: 0; font-size: .9rem; color: var(--ink-2); }
+    @media (max-width: 880px) { .steps4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 520px) { .steps4 { grid-template-columns: 1fr; } }
+
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 2rem; }
+    @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+    .two .card h3 { margin-top: 0; }
+    .ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: .55rem; font-size: .93rem; color: var(--ink-2); }
+    .ticks li { padding-left: 1.5rem; position: relative; }
+    .ticks li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 700; }
+
+    .privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; }
+    @media (max-width: 880px) { .privacy { grid-template-columns: 1fr; } }
+    .idcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); display: grid; gap: .8rem; }
+    .idrow { display: grid; grid-template-columns: 9rem 1fr; gap: .5rem; font-size: .9rem; align-items: baseline; }
+    .idrow dt { color: var(--muted); }
+    .idrow dd { margin: 0; }
+    .pwid { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; font-size: 1.15rem; letter-spacing: .04em; color: var(--accent); }
+    .struck { color: var(--muted); }
+
+    .pricing { background: var(--bg); }
+    .plans { display: grid; grid-template-columns: 1.15fr repeat(4, 1fr); gap: .9rem; margin-top: 2rem; }
+    @media (max-width: 1000px) { .plans { grid-template-columns: repeat(2, 1fr); } .plans .free { grid-column: 1 / -1; } }
+    @media (max-width: 480px) { .plans { grid-template-columns: 1fr; } }
+    .plan { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem; display: grid; gap: .45rem; align-content: start; position: relative; }
+    .plan.free { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .plan .name { font-weight: 650; }
+    .plan .price { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+    .plan .per { font-size: .82rem; color: var(--muted); }
+    .plan .btn { margin-top: .5rem; justify-content: center; }
+    .plan .tag { position: absolute; top: -.65rem; right: .9rem; }
+    .price-notes { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: .5rem 1.75rem; font-size: .88rem; color: var(--ink-2); }
+
+    .faq { max-width: 780px; }
+    .faq details { border-bottom: 1px solid var(--line); padding: .95rem 0; }
+    .faq summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+    .faq summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 1.2rem; line-height: 1; }
+    .faq details[open] summary::after { content: "–"; }
+    .faq details p { margin: .6rem 0 0; color: var(--ink-2); font-size: .95rem; }
+
+    .final { text-align: center; }
+    .final .row { justify-content: center; }
+    footer { border-top: 1px solid var(--line); padding: 1.5rem 0 2.5rem; font-size: .85rem; color: var(--muted); }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <a class="sr-only" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="pw-mark" href="/"><span class="dot">P</span>PartWays</a>
+      <nav aria-label="Site">
+        <a href="#how">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="head-cta">
+        <a class="btn sm ghost" href="/hr/">Sign in</a>
+        <a class="btn sm primary" href="#signup">Start free</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Independent AI exit interviews</p>
+          <h1>Find out why people really leave.</h1>
+          <p class="sub">PartWays interviews departing employees for you, by voice or by text, on their own phone. They review their summary before anything is shared, every answer is de-identified, and you get findings you can act on.</p>
+          <div class="row">
+            <a class="btn lg" href="#how">See how it works</a>
+            <a class="btn lg ghost" href="#pricing">Pricing</a>
+          </div>
+          <p class="fine">Your workspace includes a full demo with sample data, and you can add your team once you are in.</p>
+        </div>
+        <div class="card signup" id="signup">
+          <form id="su-form" class="stack" novalidate>
+            <h2 style="margin:0">Create your free account</h2>
+            <p class="small ink2" style="margin:0">3 free interviews. No card needed.</p>
+            <div class="field"><label for="su-org">Organisation name</label><input id="su-org" type="text" autocomplete="organization" required maxlength="120"></div>
+            <div class="field"><label for="su-country">Country</label><select id="su-country" required><option value="">Choose…</option></select></div>
+            <div class="field"><label for="su-email">Work email</label><input id="su-email" type="email" autocomplete="email" required></div>
+            <div id="su-err" class="notice bad" role="alert" hidden></div>
+            <button class="btn primary lg" type="submit">Get 3 free interviews</button>
+            <p class="small muted" style="margin:0">We email you a 6-digit code instead of a password. Already have an account? <a href="/hr/">Sign in</a></p>
+          </form>
+          <form id="su-code" class="stack" hidden novalidate>
+            <h2 style="margin:0">Check your email</h2>
+            <div class="field"><label for="su-otp">6-digit code</label><span class="hint" id="su-sent"></span><input id="su-otp" class="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></div>
+            <div id="su-err2" class="notice bad" role="alert" hidden></div>
+            <div id="su-dev" class="notice demo" hidden></div>
+            <div class="row"><button class="btn primary lg" type="submit">Create workspace</button><button class="btn ghost" type="button" id="su-back">Change details</button></div>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <div class="strip">
+      <div class="wrap">
+        <ul>
+          <li>Voice or text, in English, German and French</li>
+          <li>Employee-reviewed summaries</li>
+          <li>De-identified by design</li>
+          <li>Audio never stored</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <section id="how" aria-labelledby="how-h">
+        <p class="eyebrow">How it works</p>
+        <h2 class="big" id="how-h">From a WhatsApp message to findings in your leadership briefing.</h2>
+        <div class="how-intro">
+        <div>
+        <p class="lede">Most exit interviews are skipped, rushed, or too polite to be useful. PartWays is independent of your organisation, so people say what actually happened, and it does the interviewing and the analysis for you.</p>
+        </div>
+        <div class="mock how-mock" aria-hidden="true">
+          <div class="phone">
+            <div class="from"><span>WhatsApp</span><span>09:41</span></div>
+            <div class="bubble">Hi, Northwind has asked PartWays, an independent interviewing service, to hear about your experience as you leave. It takes about 10–15 minutes, by voice or by typing, and your answers are de-identified before Northwind sees them. Your PartWays Interview Id is <strong>PW-7KQ2-M4XD</strong>. Your link: <span class="link">partways.app/i/…</span></div>
+          </div>
+          <div class="summary">
+            <h4>Your summary, ready for you to review</h4>
+            <ul>
+              <li>Workload rose sharply after two roles were not backfilled.</li>
+              <li>Raised it with their manager more than once; felt listened to but nothing changed.</li>
+              <li>Valued the team and would recommend the company to a friend.</li>
+            </ul>
+            <div class="foot"><span class="badge good">Confirmed by the employee</span><span class="badge">Interview PW-7KQ2-M4XD</span></div>
+          </div>
+        </div>
+        </div>
+        <ol class="steps4">
+          <li><h3>Say what you want to learn</h3><p>Set objectives such as “Is hybrid working a factor?”. PartWays proposes the interview plan. You can edit every question.</p></li>
+          <li><h3>Invite by WhatsApp</h3><p>Add departing employees by mobile number. Each invitation gets its own PartWays Interview Id. No names needed.</p></li>
+          <li><h3>They talk or type</h3><p>An AI interviewer holds a natural conversation, follows up on what matters, and respects anything they would rather not discuss.</p></li>
+          <li><h3>They review, you learn</h3><p>The employee corrects and approves their summary. You see themes, trends and comparisons built only on what people confirmed.</p></li>
+        </ol>
+
+        <div class="two">
+          <div class="card">
+            <h3>For the person leaving</h3>
+            <ul class="ticks">
+              <li>Takes part on their own phone or laptop, when it suits them.</li>
+              <li>Chooses voice or text, and can switch at any point.</li>
+              <li>Sees exactly what will be shared, and can change or remove any of it.</li>
+              <li>Can decline, save for later, correct or withdraw after submitting.</li>
+              <li>Can ask the People Team to get in touch, separately from their feedback.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>For HR and People teams</h3>
+            <ul class="ticks">
+              <li>Themes, trends and segment comparisons that respect reporting minimums.</li>
+              <li>Findings mapped to the objectives you set, including what is still unclear.</li>
+              <li>An insight assistant that answers from the same numbers as your dashboard.</li>
+              <li>Editable leadership briefings, exported as PDF, CSV or a presentation.</li>
+              <li>Actions with owners and success measures, linked to the evidence.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="privacy" aria-labelledby="privacy-h">
+        <div class="privacy">
+          <div>
+            <p class="eyebrow">De-identified by design</p>
+            <h2 class="big" id="privacy-h">Honest feedback needs people to feel safe.</h2>
+            <p class="lede">PartWays never asks for names. Each invitation carries a unique PartWays Interview Id, and that Id is all your team sees next to the interview.</p>
+            <ul class="ticks" style="margin-top:1rem">
+              <li>Mobile numbers are masked in the workspace and used only to send the invitation.</li>
+              <li>Email addresses and phone numbers are removed from what people say, and the AI leaves out names.</li>
+              <li>Results for small groups are hidden, and you can choose aggregate-only reporting with no quotes.</li>
+              <li>Audio is used for the live conversation only and is never stored.</li>
+            </ul>
+          </div>
+          <dl class="idcard" aria-label="What the HR workspace shows">
+            <div class="idrow"><dt>Interview</dt><dd class="pwid">PW-7KQ2-M4XD</dd></div>
+            <div class="idrow"><dt>Name</dt><dd class="struck">Not collected</dd></div>
+            <div class="idrow"><dt>Mobile</dt><dd>+44 ••• ••• 123</dd></div>
+            <div class="idrow"><dt>Segment</dt><dd>Customer Service · 1–3 years</dd></div>
+            <div class="idrow"><dt>Status</dt><dd><span class="badge good">Submitted after review</span></dd></div>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+    <section id="pricing" class="pricing" aria-labelledby="pricing-h">
+      <div class="wrap">
+        <p class="eyebrow">Pricing</p>
+        <h2 class="big" id="pricing-h">Start free. Then pay per interview.</h2>
+        <p class="lede">Every organisation gets 3 free interviews. After that, buy credits in packs. One credit sends one interview invitation.</p>
+        <div class="plans">
+          <div class="plan free">
+            <span class="name">Free</span>
+            <span class="price">$0</span>
+            <span class="per">3 interviews, no card needed</span>
+            <ul class="ticks" style="font-size:.88rem;margin-top:.4rem">
+              <li>Every feature, voice and text</li>
+              <li>Full demo workspace with sample data</li>
+              <li>Unlimited free previews</li>
+            </ul>
+            <a class="btn primary" href="#signup">Create a free account</a>
+          </div>
+          <div class="plan">
+            <span class="name">10 interviews</span>
+            <span class="price">$100</span>
+            <span class="per">$10.00 per interview</span>
+            <a class="btn" href="#signup">Get started</a>
+          </div>
+          <div class="plan">
+            <span class="name">25 interviews</span>
+            <span class="price">$200</span>
+            <span class="per">$8.00 per interview</span>
+            <a class="btn" href="#signup">Get started</a>
+          </div>
+          <div class="plan">
+            <span class="name">50 interviews</span>
+            <span class="price">$300</span>
+            <span class="per">$6.00 per interview</span>
+            <a class="btn" href="#signup">Get started</a>
+          </div>
+          <div class="plan">
+            <span class="tag badge accent">Best value</span>
+            <span class="name">100 interviews</span>
+            <span class="price">$500</span>
+            <span class="per">$5.00 per interview</span>
+            <a class="btn" href="#signup">Get started</a>
+          </div>
+        </div>
+        <div class="price-notes">
+          <span>Credits never expire</span>
+          <span>Reminders, previews and reports are free</span>
+          <span>No subscription</span>
+          <span>Secure payment with Stripe</span>
+          <span>Prices in US dollars</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section id="faq" class="faq" aria-labelledby="faq-h">
+        <p class="eyebrow">Questions</p>
+        <h2 class="big" id="faq-h">Frequently asked</h2>
+        <details><summary>What counts as one interview?</summary><p>One credit is used when you send an invitation. If the person declines or never responds, the credit is still used, because the invitation was sent. Reminders to the same person are free, and so are previews you take yourself.</p></details>
+        <details><summary>Is there a human interviewer option?</summary><p>No. PartWays is an AI interviewer, by voice or by text. That keeps it independent and available whenever the person is, in their own language. If someone wants to speak to your team, they can ask to be contacted, separately from their feedback.</p></details>
+        <details><summary>How is the employee de-identified?</summary><p>You add people by mobile number only; we do not ask for names. Each invitation has a unique PartWays Interview Id, and the workspace shows that Id with a masked number. Email addresses and phone numbers are removed from what people say, and the AI is instructed to leave out names. The full number is only shown if the person asks your team to contact them.</p></details>
+        <details><summary>Does the employee see what is shared?</summary><p>Yes. After the conversation they see a summary, can correct, remove or add to any point, confirm their reasons for leaving, and choose whether to submit. Nothing is shared until they do, and they can withdraw later.</p></details>
+        <details><summary>Which languages are supported?</summary><p>Interviews run in English, German and French. Findings are reported in English with the original wording available where your reporting rules allow quotes.</p></details>
+        <details><summary>Are recordings kept?</summary><p>No. Audio is processed live to run the conversation and is not stored. The written transcript and the approved summary are kept.</p></details>
+        <details><summary>How are invitations sent?</summary><p>By WhatsApp, to the mobile number you provide. You can preview every message before it goes, and edit the wording per programme.</p></details>
+      </section>
+
+      <section class="final" aria-labelledby="final-h">
+        <h2 class="big" id="final-h">Run your first three exit interviews free.</h2>
+        <p class="lede" style="margin:0 auto 1.5rem">Set up takes minutes. Try the interview yourself before you invite anyone.</p>
+        <div class="row"><a class="btn primary lg" href="#signup">Create a free account</a><a class="btn lg" href="/hr/">Sign in</a></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>PartWays is an independent interviewing service. It conducts exit interviews on behalf of the organisations that commission them.</span>
+      <span><a href="#pricing">Pricing</a> · <a href="#faq">FAQ</a> · <a href="/hr/">Sign in</a></span>
+    </div>
+  </footer>
+  <script type="module">
+    import { countryOptions, guessCountry } from '/js/countries.js';
+    const $ = (id) => document.getElementById(id);
+    const sel = $('su-country');
+    const guess = guessCountry();
+    for (const [code, name] of countryOptions()) sel.add(new Option(name, code, false, code === guess));
+    const post = async (path, body) => {
+      const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw Object.assign(new Error(data.error || 'Something went wrong. Please try again.'), { status: res.status });
+      return data;
+    };
+    const showErr = (el, msg, link) => { el.hidden = !msg; el.replaceChildren(msg || ''); if (link) el.append(' ', link); };
+    let details = null, session = null;
+    $('su-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const d = { orgName: $('su-org').value.trim(), country: sel.value, email: $('su-email').value.trim() };
+      if (!d.orgName) return showErr($('su-err'), 'Enter your organisation name.');
+      if (!d.country) return showErr($('su-err'), 'Choose your country.');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) return showErr($('su-err'), 'Enter a valid work email address.');
+      const btn = e.submitter; btn.disabled = true;
+      try {
+        const r = await post('/api/auth/signup', d);
+        details = d; session = r.session;
+        showErr($('su-err'), '');
+        $('su-sent').textContent = `Sent to ${d.email}. It expires in 10 minutes.`;
+        $('su-dev').hidden = !r.devCode; $('su-dev').textContent = r.devCode ? `Local development: your code is ${r.devCode}` : '';
+        $('su-form').hidden = true; $('su-code').hidden = false; $('su-otp').focus();
+      } catch (err) {
+        const a = Object.assign(document.createElement('a'), { href: '/hr/', textContent: 'Sign in' });
+        showErr($('su-err'), err.message, err.status === 409 ? a : null);
+      } finally { btn.disabled = false; }
+    });
+    $('su-back').addEventListener('click', () => { $('su-code').hidden = true; $('su-form').hidden = false; });
+    $('su-code').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = $('su-otp').value.replace(/\D/g, '');
+      if (code.length !== 6) return showErr($('su-err2'), 'Enter the 6-digit code from the email.');
+      const btn = e.submitter; btn.disabled = true;
+      try {
+        const r = await post('/api/auth/verify', { email: details.email, code, session });
+        if (r.retry) { session = r.session; showErr($('su-err2'), r.error); return; }
+        localStorage.setItem('pw.hr.token', JSON.stringify(r.token));
+        localStorage.setItem('pw.hr.email', JSON.stringify(r.email));
+        localStorage.setItem('pw.hr.ws', JSON.stringify('own'));
+        location.href = '/hr/#/';
+      } catch (err) { showErr($('su-err2'), err.message); } finally { btn.disabled = false; }
+    });
+  </script>
+</body>
+</html>
