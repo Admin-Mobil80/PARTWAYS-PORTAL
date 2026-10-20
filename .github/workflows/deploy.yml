@@ -18,11 +18,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      # Repository VARIABLES (not secrets), printed by PARTWAYS-BACKEND's
-      # scripts/deploy.sh from the stack outputs. None of them is secret.
+      # Repository VARIABLES (not secrets): the partways-portal stack outputs
+      # from PARTWAYS-BACKEND infra. None of them is secret.
       ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
       REGION: ${{ vars.AWS_REGION }}
       BUCKET: ${{ vars.S3_BUCKET }}
+      PREFIX: ${{ vars.S3_PREFIX }}
       DISTRIBUTION: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
     steps:
       - uses: actions/checkout@v4
@@ -35,12 +36,13 @@ jobs:
           if [ -z "$ROLE_ARN" ]; then missing="$missing AWS_DEPLOY_ROLE_ARN"; fi
           if [ -z "$REGION" ]; then missing="$missing AWS_REGION"; fi
           if [ -z "$BUCKET" ]; then missing="$missing S3_BUCKET"; fi
+          if [ -z "$PREFIX" ]; then missing="$missing S3_PREFIX"; fi
           if [ -z "$DISTRIBUTION" ]; then missing="$missing CLOUDFRONT_DISTRIBUTION_ID"; fi
           if [ -n "$missing" ]; then
-            echo "::error title=Deploy not configured::Missing repository variables:$missing. Set them under Settings > Secrets and variables > Actions > Variables, using the values printed by PARTWAYS-BACKEND scripts/deploy.sh."
+            echo "::error title=Deploy not configured::Missing repository variables:$missing. Set them under Settings > Secrets and variables > Actions > Variables, using the values shown in the partways-portal stack outputs (PARTWAYS-BACKEND infra)."
             exit 1
           fi
-          printf '%-28s %s\n' AWS_REGION "$REGION" S3_BUCKET "$BUCKET" CLOUDFRONT_DISTRIBUTION_ID "$DISTRIBUTION"
+          printf '%-28s %s\n' AWS_REGION "$REGION" S3_BUCKET "$BUCKET" S3_PREFIX "$PREFIX" CLOUDFRONT_DISTRIBUTION_ID "$DISTRIBUTION"
 
       # Plain HTML, CSS and ES modules: there is no build. Only the site files
       # are published, not the repository's own files.
@@ -58,10 +60,13 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      # The bucket holds every PartWays web app, so the destination is this
+      # app's folder and --delete never reaches a sibling. The deploy role is
+      # scoped to the same folder, so a wrong S3_PREFIX fails with AccessDenied.
       # File names are not content-hashed, so every file must revalidate for a
       # deploy to be visible straight away.
       - name: Sync to S3
-        run: aws s3 sync site "s3://$BUCKET" --delete --cache-control "no-cache"
+        run: aws s3 sync site "s3://$BUCKET/${PREFIX%/}" --delete --cache-control "no-cache"
 
       - name: Invalidate CloudFront
         run: aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths "/*"
