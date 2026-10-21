@@ -1,9 +1,8 @@
 // PartWays HR workspace: sign-in, navigation shell and hash router.
-import { h, mount, api, toast, applyPrefs, prefsControls, store, watchForUpdates } from '../lib.js';
+import { h, mount, api, toast, store, watchForUpdates } from '../lib.js';
 import { countryOptions, guessCountry } from '../countries.js';
 import { state, ROLES, can, effectiveRole, setRole, setWorkspace, signOut, hr, refreshMe, refreshProgrammes, refreshThemes, plural } from './core.js';
 
-applyPrefs();
 watchForUpdates();
 
 const ROUTES = [
@@ -17,8 +16,6 @@ const ROUTES = [
   [/^\/assistant$/, () => import('./assistant.js'), 'assistant'],
   [/^\/reports$/, () => import('./reports.js'), 'reports'],
   [/^\/reports\/([^/]+)$/, () => import('./reports.js').then((m) => ({ render: m.renderReport })), 'reports'],
-  [/^\/actions$/, () => import('./actions.js'), 'actions'],
-  [/^\/actions\/([^/]+)$/, () => import('./actions.js').then((m) => ({ render: m.renderAction })), 'actions'],
   [/^\/settings$/, () => import('./settings.js'), 'settings'],
   [/^\/billing$/, () => import('./billing.js'), 'billing'],
   [/^\/team$/, () => import('./team.js'), 'team'],
@@ -31,7 +28,6 @@ const NAV = [
   ['insights', '#/insights', 'Insights', 'insights'],
   ['assistant', '#/assistant', 'Insight assistant', 'assistant'],
   ['reports', '#/reports', 'Reports', 'reports'],
-  ['actions', '#/actions', 'Actions', 'actions'],
   ['team', '#/team', 'Team', 'team'],
   ['billing', '#/billing', 'Credits and billing', 'billing'],
   ['settings', '#/settings', 'Settings', 'settings'],
@@ -156,7 +152,6 @@ function buildShell() {
     h('nav', NAV.filter(([, , , need]) => !need || can(need)).map(([id, href, label]) => h('a', { href, 'data-nav': id }, label))),
     h('div', { class: 'foot' },
       state.workspace === 'demo' ? h('label', { class: 'small muted' }, 'View as (demo)', roleSel) : null,
-      prefsControls(),
       h('div', { class: 'small muted', style: { overflowWrap: 'anywhere' } }, state.email),
       h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out')));
   crumbs = h('div', { class: 'crumbs' });

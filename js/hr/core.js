@@ -14,9 +14,9 @@ export const state = {
 };
 
 export const ROLES = {
-  owner: { label: 'Owner', can: ['programmes', 'participants', 'insights', 'assistant', 'reports', 'actions', 'settings', 'edit'] },
-  analyst: { label: 'Analyst', can: ['programmes', 'insights', 'assistant', 'reports', 'actions', 'taxonomy'] },
-  leader: { label: 'Leader', can: ['insights', 'assistant', 'reports', 'actions'] },
+  owner: { label: 'Owner', can: ['programmes', 'participants', 'insights', 'assistant', 'reports', 'settings', 'edit'] },
+  analyst: { label: 'Analyst', can: ['programmes', 'insights', 'assistant', 'reports', 'taxonomy'] },
+  leader: { label: 'Leader', can: ['insights', 'assistant', 'reports'] },
 };
 // Programme owners can also refine themes.
 ROLES.owner.can.push('taxonomy');

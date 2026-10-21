@@ -239,8 +239,7 @@ export async function renderTheme(el, [themeId]) {
   mount(el,
     pageHead(t.label, t.description,
       h('button', { class: 'btn sm', onclick: () => bookmark(t, q) }, 'Bookmark'),
-      can('reports') ? h('button', { class: 'btn sm', onclick: () => newReportDialog(q, t.id) }, 'Investigate in a report') : null,
-      can('actions') ? h('button', { class: 'btn sm primary', onclick: () => createActionDialog({ themes: [t.id], programmeId: q.programmeId === 'all' ? null : q.programmeId, evidence: { kind: 'theme', themeId: t.id, text: `${t.label}: raised by ${t.respondents} of ${n} respondents (${fmt.pct(t.share)}) in ${d.scope.periodLabel}.`, scope: d.scope } }) }, 'Create action') : null),
+      can('reports') ? h('button', { class: 'btn sm', onclick: () => newReportDialog(q, t.id) }, 'Investigate in a report') : null),
     h('div', { class: 'stack', style: { gap: '1rem' } },
       scopeLine({ scope: d.scope, current: { n } }),
       h('div', { class: 'stats' },
@@ -296,24 +295,6 @@ function taxonomyCard(t, q) {
       h('div', { class: 'row' }, h('label', { class: 'small' }, 'Merge into ', mergeSel), h('button', { class: 'btn sm', onclick: () => run({ op: 'merge', from: [t.id], into: mergeSel.value }) }, 'Preview')),
       Object.keys(t.subthemes || {}).length ? h('div', { class: 'row' }, h('label', { class: 'small' }, 'Split out ', splitSel), splitName, h('button', { class: 'btn sm', onclick: () => run({ op: 'split', theme: t.id, sub: splitSel.value, label: splitName.value }) }, 'Preview')) : null,
       preview));
-}
-
-export function createActionDialog(prefill = {}) {
-  const v = { title: '', owner: '', dueDate: '', outcome: '', successMeasure: '', ...prefill };
-  const field = (k, label, type = 'text', hint) => h('div', { class: 'field', style: { margin: 0 } }, h('label', { for: `a-${k}` }, label), hint ? h('span', { class: 'hint' }, hint) : null,
-    type === 'textarea' ? h('textarea', { id: `a-${k}`, rows: 2, oninput: (e) => { v[k] = e.target.value; } }, v[k] || '') : h('input', { type, id: `a-${k}`, value: v[k] || '', oninput: (e) => { v[k] = e.target.value; } }));
-  dialog({
-    title: 'Create an improvement action', wide: true,
-    body: h('div', { class: 'stack' },
-      prefill.evidence ? h('div', { class: 'notice' }, h('div', h('strong', 'Linked evidence'), h('div', { class: 'small' }, prefill.evidence.text))) : null,
-      field('title', 'Action'), h('div', { class: 'grid g2' }, field('owner', 'Owner'), field('dueDate', 'Due date', 'date')),
-      field('outcome', 'Intended outcome', 'textarea'), field('successMeasure', 'How you will know it worked (optional)', 'textarea', 'Later exit feedback on the same themes is shown alongside the action. It shows change, not proof of effect.')),
-    actions: [{ label: 'Cancel' }, { label: 'Create action', kind: 'primary', onClick: async () => {
-      const r = await hr('/api/hr/actions', { method: 'POST', body: v });
-      toast('Action created.');
-      go(`#/actions/${r.action.id}`);
-    } }],
-  });
 }
 
 export async function newReportDialog(query, themeId) {

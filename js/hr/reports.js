@@ -70,7 +70,6 @@ export async function renderReport(el, [id], query = {}) {
         h('button', { class: 'btn ghost sm', 'aria-label': `Move ${s.title} down`, onclick: () => move(1) }, '↓')) : null),
       editable ? h('textarea', { 'aria-label': `${s.title} text`, rows: Math.min(12, Math.max(3, Math.ceil(s.text.length / 110))), oninput: (e) => { s.text = e.target.value; s.edited = true; save(); } }, s.text) : h('p', { style: { whiteSpace: 'pre-wrap' } }, s.text),
       s.evidence?.length ? h('details', h('summary', `Evidence (${s.evidence.length})`), s.evidence.map((e) => evidenceItem(e))) : null,
-      s.actions?.length ? h('ul', { class: 'small' }, s.actions.map((a) => h('li', h('a', { href: `#/actions/${a.id}` }, a.title), ` · ${a.owner} · ${a.status.replace('_', ' ')}${a.dueDate ? ` · due ${fmt.date(a.dueDate)}` : ''}`))) : null,
       s.sourceScope ? h('div', { class: 'small muted' }, `Source: ${s.sourceScope}`) : null,
       chart);
   }));

@@ -177,23 +177,6 @@ export const store = {
   del(k) { try { localStorage.removeItem(k); } catch { /* storage unavailable */ } },
 };
 
-export function applyPrefs() {
-  const p = store.get('pw.prefs', {});
-  if (p.theme) document.documentElement.dataset.theme = p.theme; else delete document.documentElement.dataset.theme;
-  document.documentElement.style.setProperty('--text-scale', p.scale || 1);
-}
-
-export function prefsControls() {
-  const p = store.get('pw.prefs', {});
-  const set = (patch) => { store.set('pw.prefs', { ...store.get('pw.prefs', {}), ...patch }); applyPrefs(); };
-  return h('div', { class: 'row', style: { gap: '.35rem' } },
-    h('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'Smaller text', onclick: () => set({ scale: Math.max(0.9, (store.get('pw.prefs', {}).scale || 1) - 0.1) }) }, 'A−'),
-    h('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'Larger text', onclick: () => set({ scale: Math.min(1.4, (store.get('pw.prefs', {}).scale || 1) + 0.1) }) }, 'A+'),
-    h('select', { 'aria-label': 'Colour theme', style: { width: 'auto', minHeight: '32px', padding: '.2rem .4rem' }, onchange: (e) => set({ theme: e.target.value || null }) },
-      h('option', { value: '', selected: !p.theme }, 'Auto'), h('option', { value: 'light', selected: p.theme === 'light' }, 'Light'), h('option', { value: 'dark', selected: p.theme === 'dark' }, 'Dark')),
-  );
-}
-
 export function debounce(fn, ms = 600) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };

@@ -14,7 +14,7 @@ export async function render(el) {
   const field = (k, label, hint) => h('div', { class: 'field' }, h('label', { for: `o-${k}` }, label), hint ? h('span', { class: 'hint' }, hint) : null, h('input', { type: 'text', id: `o-${k}`, value: org[k] || '', oninput: (e) => { org[k] = e.target.value; drawPreview(); } }));
   const reset = async (scope) => {
     const msg = scope === 'all'
-      ? 'Everything returns to the original demonstration state: programmes, participants, interviews, reports, actions and theme changes. Your evaluation interviews are removed.'
+      ? 'Everything returns to the original demonstration state: programmes, participants, interviews, reports and theme changes. Your evaluation interviews are removed.'
       : 'Interviews, participants and imports you added during this evaluation are removed. The demonstration data is unchanged.';
     if (!(await confirmDialog(scope === 'all' ? 'Reset the whole demonstration?' : 'Remove your evaluation data?', msg, { confirmLabel: 'Reset', kind: 'danger' }))) return;
     try {

@@ -3,7 +3,7 @@
 import { h, mount, toast, dialog } from '../lib.js';
 import { hr, can, go, pageHead, loading } from './core.js';
 import { setCrumbs } from './app.js';
-import { getQuery, setQuery, scopeLine, createActionDialog } from './insights.js';
+import { getQuery, setQuery, scopeLine } from './insights.js';
 import { table } from './charts.js';
 
 let history = [];
@@ -52,7 +52,6 @@ function answerCard(a) {
     refLinks(a.refs),
     h('div', { class: 'row' },
       can('reports') ? h('button', { class: 'btn sm', onclick: () => addToReport(a).catch((e) => toast(e.message, { kind: 'bad' })) }, 'Add to report') : null,
-      can('actions') ? h('button', { class: 'btn sm', onclick: () => createActionDialog({ themes: (a.refs || []).filter((r) => r.id && r.type !== 'objective').map((r) => r.id).slice(0, 3), programmeId: a.query.programmeId === 'all' ? null : a.query.programmeId, evidence: { kind: 'answer', text: a.said, scope: a.scope } }) }, 'Create action') : null,
       h('button', { class: 'btn ghost sm', onclick: async () => { try { await navigator.clipboard.writeText(`${a.question}\n\n${answerText(a)}\n\n(${a.scope})`); toast('Copied.'); } catch { toast('Copy is not available in this browser.', { kind: 'bad' }); } } }, 'Copy')));
 }
 

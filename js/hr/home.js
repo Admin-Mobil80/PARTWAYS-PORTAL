@@ -74,7 +74,7 @@ function firstSteps() {
       step(1, 'Shape the interview', 'Say what you want to learn. PartWays proposes the topics; you can edit every question.', first ? btn('Open the guide', () => go(`#/programmes/${first.id}/guide`)) : btn('New programme', () => go('#/programmes/new'))),
       step(2, 'Try it yourself', 'Take the interview by voice or text, as a departing employee would. Free, and never counted.', btn('Try an interview', () => previewDialog(first?.id))),
       step(3, 'Invite people who are leaving', `Add email addresses and/or mobile numbers and send invitations by email and WhatsApp. Each gets a PartWays Interview Id. You have ${plural(credits, 'credit')}.`, first ? btn('Add people', () => go(`#/programmes/${first.id}/participants`)) : null),
-      step(4, 'Act on what you learn', 'See themes, ask the assistant, brief leaders and track actions. Findings stay de-identified.', btn('See an example', async () => showDemo()))));
+      step(4, 'Act on what you learn', 'See themes, ask the assistant and brief leaders. Findings stay de-identified.', btn('See an example', async () => showDemo()))));
 }
 
 function teamWelcome() {
@@ -101,16 +101,11 @@ async function attention() {
   (async () => {
     const items = [];
     try {
-      const [acts, fups] = await Promise.all([
-        can('actions') ? hr('/api/hr/actions') : { actions: [] },
-        can('participants') ? hr('/api/hr/participants?status=follow_up') : { participants: [] },
-      ]);
+      const fups = can('participants') ? await hr('/api/hr/participants?status=follow_up') : { participants: [] };
       const credits = state.me?.credits;
       if (credits && !credits.unlimited && credits.balance === 0) items.push(['You have no interview credits left. Buy credits to send more invitations.', '#/billing']);
       const fu = fups.participants.filter((p) => p.followUp?.status === 'requested');
       if (fu.length) items.push([`${fu.length} follow-up request${fu.length > 1 ? 's' : ''} not yet acknowledged`, '#/follow-ups']);
-      const overdue = acts.actions.filter((a) => a.overdue);
-      if (overdue.length) items.push([`${overdue.length} overdue action${overdue.length > 1 ? 's' : ''}`, '#/actions?filter=overdue']);
       for (const p of state.programmes.filter((x) => x.hasDraft && can('edit'))) items.push([`${p.name} has guide changes that are not active yet`, `#/programmes/${p.id}/guide`]);
       for (const p of state.programmes.filter((x) => x.processing)) items.push([`${p.name}: ${p.processing} submitted interview(s) still processing`, `#/programmes/${p.id}`]);
     } catch (err) { items.push([err.message, null]); }

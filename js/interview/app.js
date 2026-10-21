@@ -1,9 +1,8 @@
 // Employee interview app: invitation → format → (preparation) → conversation → review → submitted.
-import { h, mount, api, streamApi, toast, dialog, confirmDialog, fmt, store, applyPrefs, prefsControls, icon, watchForUpdates } from '../lib.js';
+import { h, mount, api, streamApi, toast, dialog, confirmDialog, fmt, store, icon, watchForUpdates } from '../lib.js';
 import { t, setLang, getLang } from '../i18n.js';
 import { Speaker, Listener, SentenceSplitter, micCheck, voiceSupport } from '../voice.js';
 
-applyPrefs();
 watchForUpdates({ message: () => t('updateAvailable'), note: () => t('updateNote'), reload: () => t('reload'), later: () => t('later') });
 const app = document.getElementById('app');
 let config = null;
@@ -24,8 +23,7 @@ function shell(...content) {
       h('div', { class: 'row', style: { gap: '.4rem' } },
         langs.length > 1 ? h('label', { class: 'sr-only', for: 'langsel' }, t('language')) : null,
         langs.length > 1 ? h('select', { id: 'langsel', style: { width: 'auto', minHeight: '34px', padding: '.2rem .5rem' }, onchange: (e) => { setLang(e.target.value); store.set('pw.lang', e.target.value); route(); } },
-          langs.map((l) => h('option', { value: l.code, selected: l.code === getLang() }, l.native))) : null,
-        prefsControls())),
+          langs.map((l) => h('option', { value: l.code, selected: l.code === getLang() }, l.native))) : null)),
     h('main', { id: 'main', class: 'wrap', tabindex: '-1' }, ...content),
   ];
 }
