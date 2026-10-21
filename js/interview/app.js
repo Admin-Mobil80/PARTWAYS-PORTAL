@@ -2,6 +2,7 @@
 import { h, mount, api, streamApi, toast, dialog, confirmDialog, fmt, store, icon, watchForUpdates } from '../lib.js';
 import { t, setLang, getLang } from '../i18n.js';
 import { Speaker, Listener, SentenceSplitter, micCheck, voiceSupport, silenceLeftoverSpeech } from '../voice.js';
+import { RealtimeConversation, realtimeSupported } from '../realtime.js';
 
 silenceLeftoverSpeech();
 watchForUpdates({ message: () => t('updateAvailable'), note: () => t('updateNote'), reload: () => t('reload'), later: () => t('later') });
@@ -195,6 +196,8 @@ function prepScreen({ resume = false }) {
   const meterBar = h('span');
   const micMsg = h('p', { class: 'small ink2', role: 'status' }, '');
   const voiceSel = { voice: s.voice || config.voice.voices[0].id, style: s.voiceStyle || 'balanced' };
+  // Live voice needs only WebRTC and a microphone; the standard voice needs browser speech support.
+  const voiceReady = (config.voice.realtime && realtimeSupported()) || support.ok;
   const cleanup = () => { stopMeter?.(); stopMeter = null; };
   const toText = async () => {
     cleanup();
@@ -222,7 +225,7 @@ function prepScreen({ resume = false }) {
   };
   render(
     h('div', { class: 'hero' }, h('h1', t('prepTitle'))),
-    !support.ok ? h('div', { class: 'notice warn' }, icon('warn'), t('needVoice')) : null,
+    !voiceReady ? h('div', { class: 'notice warn' }, icon('warn'), t('needVoice')) : null,
     h('div', { class: 'card stack' },
       h('h3', t('prepMic')),
       h('div', { class: 'meter', role: 'meter', 'aria-label': t('prepMic') }, meterBar), micMsg,
@@ -230,12 +233,13 @@ function prepScreen({ resume = false }) {
     h('div', { class: 'card stack', style: { marginTop: '1rem' } },
       h('h3', t('prepSound')),
       h('div', { class: 'seg', role: 'group', 'aria-label': t('prepSound') }, voiceBtns),
-      h('div', h('button', { class: 'btn sm', onclick: sample }, t('prepPlay'))),
+      // The live interviewer's voice cannot be previewed with the browser's speech engine.
+      config.voice.realtime && realtimeSupported() ? null : h('div', h('button', { class: 'btn sm', onclick: sample }, t('prepPlay'))),
       h('h3', { style: { marginTop: '.5rem' } }, t('prepStyle')),
       h('div', { class: 'seg', role: 'group', 'aria-label': t('prepStyle') }, styleBtns),
       h('p', { class: 'muted small' }, config.voice.retention.stt)),
     h('div', { class: 'row', style: { marginTop: '1.5rem' } },
-      h('button', { class: 'btn primary lg', disabled: !support.ok, onclick: () => { cleanup(); conversationScreen({ voice: true, resume, voiceSel }); } }, resume ? t('resumeBtn') : t('start')),
+      h('button', { class: 'btn primary lg', disabled: !voiceReady, onclick: () => { cleanup(); conversationScreen({ voice: true, resume, voiceSel }); } }, resume ? t('resumeBtn') : t('start')),
       h('button', { class: 'btn ghost', onclick: toText }, t('useText'))),
   );
 }
@@ -250,6 +254,9 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     silenceTimer: null, pausePrompted: false, extendAsked: false, ended: s.phase === 'ended', lastQuestion: '' };
   let speaker = null;
   let listener = null;
+  // Live voice (OpenAI Realtime) when available; otherwise the standard voice pipeline.
+  let rt = null;
+  let rtSpeaking = false;
 
   const statusEl = h('div', { class: 'status', role: 'status', 'aria-live': 'polite' });
   const qEl = h('div', { class: 'current-q', 'aria-live': 'polite' });
@@ -334,8 +341,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
         ctlBtn(st.muted ? t('unmute') : t('mute'), toggleMute, { icon: st.muted ? 'micOff' : 'mic', pressed: st.muted }),
         ctlBtn(t('type'), switchToText)) : null,
       h('div', { class: 'secondary' },
-        ctlBtn(t('repeat'), () => send({ event: 'repeat' }), { kind: 'ghost sm', disabled: st.busy }),
-        ctlBtn(t('skip'), () => send({ event: 'skip_topic' }), { kind: 'ghost sm', disabled: st.busy }),
+        ctlBtn(t('repeat'), () => (rt ? rt.prompt('(The employee pressed "Repeat question". Repeat your last question briefly, in other words if helpful.)') : send({ event: 'repeat' })), { kind: 'ghost sm', disabled: st.busy }),
+        ctlBtn(t('skip'), () => (rt ? rt.prompt('(The employee pressed "Skip topic". Acknowledge without comment and move to a different topic.)') : send({ event: 'skip_topic' })), { kind: 'ghost sm', disabled: st.busy }),
         ctlBtn(st.transcriptOpen ? t('hideTranscript') : t('transcript'), () => { st.transcriptOpen = !st.transcriptOpen; transcriptPanel.hidden = !st.transcriptOpen; renderControls(); }, { kind: 'ghost sm' })),
     ].filter(Boolean));
     if (!st.voice) transcriptPanel.hidden = false;
@@ -386,6 +393,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   }
 
   async function switchToText() {
+    stopLive();
     stopListening();
     speaker?.stop();
     st.voice = false;
@@ -401,7 +409,48 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   function toggleMute() {
     st.muted = !st.muted;
     api(`/api/session/${s.id}/event`, { method: 'POST', body: { type: st.muted ? 'mute' : 'unmute' }, headers }).catch(() => {});
+    if (rt) { rt.mute(st.muted); setState(st.muted ? 'muted' : rtSpeaking ? 'speaking' : 'listening'); return; }
     if (st.muted) { stopListening(); setState('muted'); } else startListening();
+  }
+
+  // --- Live voice -------------------------------------------------------------
+  async function startLive() {
+    setState('thinking');
+    let reply = '';
+    rt = new RealtimeConversation({
+      keyUrl: `/api/session/${s.id}/realtime`, headers, body: { voice: voiceSel?.voice, style: voiceSel?.style },
+      onAssistantDelta: (d) => { reply += d; qEl.textContent = reply; keepInView(); },
+      onAssistantTurn: (text, at) => { reply = ''; qEl.textContent = text; saveLiveTurn('interviewer', text, at); },
+      onUserTurn: (text, at) => { liveEl.textContent = ''; saveLiveTurn('employee', text, at); },
+      onSpeaking: (on) => {
+        rtSpeaking = on;
+        if (st.ended) { if (!on) setState('finished'); return; }
+        setState(on ? 'speaking' : st.muted ? 'muted' : 'listening');
+      },
+      onUserSpeaking: (on) => { if (on && !st.ended && !st.muted) setState('listening'); },
+      onError: () => liveFailed(),
+    });
+    try { await rt.start(); } catch (err) { liveFailed(err); }
+  }
+  function stopLive() { rt?.stop(); rt = null; rtSpeaking = false; }
+  async function saveLiveTurn(role, text, at) {
+    ctx.session.transcript.push({ id: `tmp${Date.now()}`, role, text });
+    renderChat();
+    try {
+      const r = await api(`/api/session/${s.id}/realtime/turn`, { method: 'POST', body: { role, text, at, activeMs: st.activeMs }, headers });
+      if (r.topics) renderTopics(r.topics);
+      if (r.seriousConcern) showConcern();
+      if (r.phase === 'ended' && !st.ended) endConversation();
+    } catch { /* keep the conversation going; this turn may be missing from the saved transcript */ }
+  }
+  // Live voice could not start or dropped: carry on with the standard voice.
+  function liveFailed() {
+    if (!rt) return;
+    stopLive();
+    if (st.ended) return;
+    noticeEl.replaceChildren(h('div', { class: 'notice' }, icon('info'), h('p', { style: { margin: 0 } }, t('liveFallback'))));
+    setTimeout(() => noticeEl.replaceChildren(), 6000);
+    send({ event: ctx.session.transcript.length ? 'resume' : 'start' });
   }
 
   function sendText() {
@@ -454,15 +503,19 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     }
     await refresh();
     if (done?.seriousConcern) showConcern();
-    if (done?.phase === 'ended') {
-      st.ended = true;
-      const finishWhenQuiet = () => { setState('finished'); stopListening(); };
-      if (speaker?.speaking) speaker.onend = finishWhenQuiet; else finishWhenQuiet();
-      noticeEl.replaceChildren(h('div', { class: 'notice good' }, icon('check'), h('p', { style: { margin: 0 } }, t('stFinished'))));
-      renderControls();
-      return;
-    }
+    if (done?.phase === 'ended') { endConversation(); return; }
     if (!st.voice) { setState('your_turn'); input.focus(); } else if (!speaker?.speaking) startListening();
+  }
+
+  // The interviewer has closed the conversation: once it stops speaking, only Finish remains.
+  function endConversation() {
+    st.ended = true;
+    const finishWhenQuiet = () => { setState('finished'); stopListening(); stopLive(); };
+    if (rt && rtSpeaking) rt.onSpeaking = (on) => { if (!on) finishWhenQuiet(); };
+    else if (speaker?.speaking) speaker.onend = finishWhenQuiet;
+    else finishWhenQuiet();
+    noticeEl.replaceChildren(h('div', { class: 'notice good' }, icon('check'), h('p', { style: { margin: 0 } }, t('stFinished'))));
+    renderControls();
   }
 
   async function refresh() {
@@ -500,7 +553,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
         h('button', { class: 'btn', onclick: () => conversationScreen({ voice: false, resume: true }) }, t('back')))));
     }
   }
-  function cleanupAll() { stopListening(); speaker?.stop(); clearInterval(ticker); clearTimeout(st.silenceTimer); }
+  function cleanupAll() { stopLive(); stopListening(); speaker?.stop(); clearInterval(ticker); clearTimeout(st.silenceTimer); }
 
   render(
     ctx.session.preview ? h('div', { class: 'notice demo', style: { marginTop: '.5rem' } }, t('previewBanner')) : null,
@@ -516,6 +569,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   setState(st.voice ? 'thinking' : 'your_turn');
   const hasTurns = ctx.session.transcript.length > 0;
   if (st.ended) setState('finished');
+  else if (st.voice && config.voice.realtime && realtimeSupported()) startLive();
   else if (!hasTurns) send({ event: 'start' });
   else if (resume || s.status === 'paused') send({ event: 'resume' });
   else if (st.voice) startListening();
