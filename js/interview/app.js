@@ -246,8 +246,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   const s = ctx.session;
   const headers = { 'x-session-token': ctx.sessionToken };
   const durMax = { quick: 7, standard: 15, in_depth: 25 }[s.duration] * 60000;
-  const st = { state: 'thinking', voice, muted: false, paused: s.status === 'paused' && !resume, transcriptOpen: !voice, busy: false, activeMs: s.activeMs || 0, lastTick: Date.now(),
-    silenceTimer: null, pausePrompted: false, extendAsked: false, ended: false, lastQuestion: '' };
+  const st = { state: 'thinking', voice, muted: false, paused: false, transcriptOpen: !voice, busy: false, activeMs: s.activeMs || 0, lastTick: Date.now(),
+    silenceTimer: null, pausePrompted: false, extendAsked: false, ended: s.phase === 'ended', lastQuestion: '' };
   let speaker = null;
   let listener = null;
 
@@ -319,23 +319,26 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
 
   const ctlBtn = (label, onclick, opts = {}) => h('button', { class: `btn ${opts.kind || ''}`, type: 'button', onclick, disabled: !!opts.disabled, 'aria-pressed': opts.pressed == null ? null : String(opts.pressed) }, opts.icon ? icon(opts.icon) : null, label);
   const controls = h('div', { class: 'controls' });
+  // While the conversation runs: the typing box (text) or Mute/Type (voice), plus small
+  // helpers. Once the interviewer has closed the conversation, only Finish remains.
   function renderControls() {
-    const finished = st.ended;
+    if (st.ended) {
+      controls.replaceChildren(h('div', { class: 'main' }, h('span', { class: 'spacer' }), ctlBtn(t('finish'), finish, { kind: 'primary lg' })));
+      transcriptPanel.hidden = false;
+      return;
+    }
     // replaceChildren would print a missing (null) part as the text "null".
     controls.replaceChildren(...[
-      st.voice && !finished ? null : composer,
-      h('div', { class: 'main' },
-        ctlBtn(st.paused ? t('resume') : t('pause'), togglePause, { icon: st.paused ? 'play' : 'pause', disabled: finished }),
-        st.voice ? ctlBtn(st.muted ? t('unmute') : t('mute'), toggleMute, { icon: st.muted ? 'micOff' : 'mic', pressed: st.muted, disabled: finished || st.paused }) : null,
-        st.voice ? ctlBtn(t('type'), switchToText, { disabled: finished }) : null,
-        h('span', { class: 'spacer' }),
-        ctlBtn(t('finish'), finish, { kind: 'primary' })),
+      st.voice ? null : composer,
+      st.voice ? h('div', { class: 'main' },
+        ctlBtn(st.muted ? t('unmute') : t('mute'), toggleMute, { icon: st.muted ? 'micOff' : 'mic', pressed: st.muted }),
+        ctlBtn(t('type'), switchToText)) : null,
       h('div', { class: 'secondary' },
-        ctlBtn(t('repeat'), () => send({ event: 'repeat' }), { kind: 'ghost sm', disabled: finished || st.busy || st.paused }),
-        ctlBtn(t('skip'), () => send({ event: 'skip_topic' }), { kind: 'ghost sm', disabled: finished || st.busy || st.paused }),
+        ctlBtn(t('repeat'), () => send({ event: 'repeat' }), { kind: 'ghost sm', disabled: st.busy }),
+        ctlBtn(t('skip'), () => send({ event: 'skip_topic' }), { kind: 'ghost sm', disabled: st.busy }),
         ctlBtn(st.transcriptOpen ? t('hideTranscript') : t('transcript'), () => { st.transcriptOpen = !st.transcriptOpen; transcriptPanel.hidden = !st.transcriptOpen; renderControls(); }, { kind: 'ghost sm' })),
     ].filter(Boolean));
-    if (!st.voice || finished) transcriptPanel.hidden = false;
+    if (!st.voice) transcriptPanel.hidden = false;
   }
 
   function startListening() {
@@ -395,21 +398,6 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     input.focus();
   }
 
-  async function togglePause() {
-    st.paused = !st.paused;
-    if (st.paused) {
-      stopListening();
-      speaker?.stop();
-      clearTimeout(st.silenceTimer);
-      setState('paused');
-      noticeEl.replaceChildren(h('div', { class: 'notice' }, icon('pause'), t('paused')));
-      await api(`/api/session/${s.id}/event`, { method: 'POST', body: { type: 'pause', activeMs: st.activeMs }, headers }).catch(() => {});
-    } else {
-      noticeEl.replaceChildren();
-      await api(`/api/session/${s.id}/event`, { method: 'POST', body: { type: 'resume', activeMs: st.activeMs }, headers }).catch(() => {});
-      if (st.voice) startListening(); else setState('your_turn');
-    }
-  }
   function toggleMute() {
     st.muted = !st.muted;
     api(`/api/session/${s.id}/event`, { method: 'POST', body: { type: st.muted ? 'mute' : 'unmute' }, headers }).catch(() => {});
@@ -470,7 +458,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
       st.ended = true;
       const finishWhenQuiet = () => { setState('finished'); stopListening(); };
       if (speaker?.speaking) speaker.onend = finishWhenQuiet; else finishWhenQuiet();
-      noticeEl.replaceChildren(h('div', { class: 'notice good' }, icon('check'), h('div', h('p', t('stFinished')), h('button', { class: 'btn primary', onclick: finish }, t('reviewTitle')))));
+      noticeEl.replaceChildren(h('div', { class: 'notice good' }, icon('check'), h('p', { style: { margin: 0 } }, t('stFinished'))));
+      renderControls();
       return;
     }
     if (!st.voice) { setState('your_turn'); input.focus(); } else if (!speaker?.speaking) startListening();
@@ -526,7 +515,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   transcriptPanel.hidden = st.voice && !st.transcriptOpen;
   setState(st.voice ? 'thinking' : 'your_turn');
   const hasTurns = ctx.session.transcript.length > 0;
-  if (!hasTurns) send({ event: 'start' });
+  if (st.ended) setState('finished');
+  else if (!hasTurns) send({ event: 'start' });
   else if (resume || s.status === 'paused') send({ event: 'resume' });
   else if (st.voice) startListening();
 }
