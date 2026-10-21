@@ -123,7 +123,6 @@ function inviteScreen() {
     h('details', { class: 'card flat', style: { margin: '1rem 0' } },
       h('summary', { style: { cursor: 'pointer', fontWeight: 600 } }, t('howUsed')),
       h('p', { style: { marginTop: '.6rem' } }, p.feedbackNotice),
-      h('p', { class: 'muted small' }, p.followUpWording),
       h('p', { class: 'muted small' }, `${t('language')}: ${p.languages.map((l) => l.native).join(', ')}`)),
     h('div', { class: 'row' },
       h('button', { class: 'btn primary lg', onclick: () => formatScreen() }, t('begin')),
@@ -303,7 +302,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   const controls = h('div', { class: 'controls' });
   function renderControls() {
     const finished = st.ended;
-    controls.replaceChildren(
+    // replaceChildren would print a missing (null) part as the text "null".
+    controls.replaceChildren(...[
       st.voice && !finished ? null : composer,
       h('div', { class: 'main' },
         ctlBtn(st.paused ? t('resume') : t('pause'), togglePause, { icon: st.paused ? 'play' : 'pause', disabled: finished }),
@@ -314,9 +314,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
       h('div', { class: 'secondary' },
         ctlBtn(t('repeat'), () => send({ event: 'repeat' }), { kind: 'ghost sm', disabled: finished || st.busy || st.paused }),
         ctlBtn(t('skip'), () => send({ event: 'skip_topic' }), { kind: 'ghost sm', disabled: finished || st.busy || st.paused }),
-        ctlBtn(st.transcriptOpen ? t('hideTranscript') : t('transcript'), () => { st.transcriptOpen = !st.transcriptOpen; transcriptPanel.hidden = !st.transcriptOpen; renderControls(); }, { kind: 'ghost sm' }),
-        ctlBtn(tv('requestContact'), requestContact, { kind: 'ghost sm' })),
-    );
+        ctlBtn(st.transcriptOpen ? t('hideTranscript') : t('transcript'), () => { st.transcriptOpen = !st.transcriptOpen; transcriptPanel.hidden = !st.transcriptOpen; renderControls(); }, { kind: 'ghost sm' })),
+    ].filter(Boolean));
     if (!st.voice || finished) transcriptPanel.hidden = false;
   }
 
@@ -333,7 +332,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
           }
           clearTimeout(st.silenceTimer);
         },
-        onInterim: (txt) => { if (!speaker?.speaking) liveEl.textContent = txt; },
+        onInterim: (txt) => { if (!speaker?.speaking) liveEl.textContent = txt || ''; },
         onTurn: (txt) => { if (speaker?.speaking) return; liveEl.textContent = ''; send({ text: txt, via: 'voice' }); },
         onError: (kind) => audioFailure(kind),
         onState: () => {},
@@ -428,7 +427,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
       await streamApi(`/api/session/${s.id}/turn`, { text, event, via, activeMs: st.activeMs }, headers, (m) => {
         if (m.t === 'delta') {
           reply += m.text;
-          qEl.textContent = reply;
+          qEl.textContent = reply || '';
           live.lastChild.textContent = reply;
           splitter?.push(m.text);
         } else if (m.t === 'done') done = m;
@@ -462,25 +461,17 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     renderTopics(ctx.session.topics);
     renderChat();
     const last = [...ctx.session.transcript].reverse().find((x) => x.role === 'interviewer');
-    if (last) qEl.textContent = last.text;
+    if (last) qEl.textContent = last.text || '';
   }
 
   function showConcern() {
-    noticeEl.replaceChildren(h('div', { class: 'notice' }, icon('info'), h('div', h('p', tv('concern')), h('button', { class: 'btn sm', onclick: requestContact }, tv('requestContact')))));
+    noticeEl.replaceChildren(h('div', { class: 'notice' }, icon('info'), h('div', h('p', tv('concern')))));
   }
 
   function askExtend() {
     noticeEl.replaceChildren(h('div', { class: 'notice' }, icon('info'), h('div', h('p', t('extendAsk')), h('div', { class: 'row' },
       h('button', { class: 'btn sm', onclick: () => { noticeEl.replaceChildren(); api(`/api/session/${s.id}/event`, { method: 'POST', body: { type: 'extend' }, headers }); } }, t('continue')),
       h('button', { class: 'btn sm primary', onclick: () => { noticeEl.replaceChildren(); send({ event: 'finish' }); } }, t('finish'))))));
-  }
-
-  async function requestContact() {
-    const note = h('textarea', { rows: 3 });
-    dialog({ title: tv('requestContact'), body: h('div', h('p', { class: 'ink2' }, ctx.programme.followUpWording), h('label', { class: 'small' }, 'Note (optional)', note)), actions: [{ label: t('cancel') }, { label: tv('requestContact'), kind: 'primary', onClick: async () => {
-      await api(`/api/session/${s.id}/follow-up`, { method: 'POST', body: { note: note.value }, headers });
-      toast(tv('contactRequested'), { timeout: 7000 });
-    } }] });
   }
 
   async function finish() {
@@ -669,12 +660,10 @@ function submittedScreen() {
     } }, n));
     return h('div', { class: 'row between' }, h('span', t(`rate.${k}`)), h('div', { class: 'stars' }, btns));
   };
-  const followed = s.followUpRequested || ctx.invite?.followUp;
   render(
     h('div', { class: 'hero' }, h('h1', t('submittedTitle')), h('p', { class: 'ink2' }, ctx.programme.completionMessage)),
     h('section', { class: 'card stack' }, h('h3', t('submittedWhat')),
       h('p', { class: 'row', style: { gap: '.5rem', alignItems: 'flex-start', flexWrap: 'nowrap' } }, icon('check'), h('span', tv('didSubmit'))),
-      h('p', { class: 'row', style: { gap: '.5rem', alignItems: 'flex-start', flexWrap: 'nowrap' } }, icon('info'), h('span', followed ? tv('didFollow') : tv('didNotFollow'))),
       s.interviewId ? h('p', { class: 'small muted', style: { margin: 0 } }, `${t('interviewId')}: `, h('strong', { class: 'mono' }, s.interviewId), ` · ${t('interviewIdHint')}`) : null,
       (s.revisions || []).length ? h('p', { class: 'muted small' }, s.revisions.map((r) => `${fmt.date(r.at)}: ${r.type}`).join(' · ')) : null),
     h('section', { class: 'card stack', style: { marginTop: '1rem' } }, h('h3', t('copy')),

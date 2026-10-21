@@ -42,7 +42,7 @@ export async function render(el) {
           h('dt', 'Identity'), h('dd', 'Departing employees are known by a PartWays Interview Id and a masked email address and/or mobile number. Names are not collected, and email addresses and phone numbers are removed from what people say.'),
           h('dt', 'Sign-in'), h('dd', `6-digit email code. Signed in as ${state.email}.`))),
       demo ? h('section', { class: 'card stack' }, h('h3', 'Demonstration'),
-        h('p', { class: 'small ink2', style: { margin: 0 } }, `${state.org.name} is a fictional organisation. Its data covers three programmes and three quarters of 2026, including declines, expiries, corrections, a withdrawal and follow-up requests. This copy is private to your organisation.`),
+        h('p', { class: 'small ink2', style: { margin: 0 } }, `${state.org.name} is a fictional organisation. Its data covers three programmes and three quarters of 2026, including declines, expiries, corrections and a withdrawal. This copy is private to your organisation.`),
         h('div', { class: 'row' },
           can('programmes') ? h('button', { class: 'btn', onclick: () => tryInterviewDialog() }, 'Try an interview') : null,
           h('button', { class: 'btn', onclick: () => reset('evaluation') }, 'Remove my evaluation data'),

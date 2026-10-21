@@ -10,7 +10,6 @@ const ROUTES = [
   [/^\/programmes$/, () => import('./home.js').then((m) => ({ render: m.renderPortfolio })), 'programmes'],
   [/^\/programmes\/new$/, () => import('./programme.js').then((m) => ({ render: m.renderNew })), 'programmes'],
   [/^\/programmes\/([^/]+)(?:\/(overview|guide|participants|settings))?$/, () => import('./programme.js'), 'programmes'],
-  [/^\/follow-ups$/, () => import('./participants.js').then((m) => ({ render: m.renderFollowUps })), 'followups'],
   [/^\/insights$/, () => import('./insights.js'), 'insights'],
   [/^\/insights\/theme\/([^/]+)$/, () => import('./insights.js').then((m) => ({ render: m.renderTheme })), 'insights'],
   [/^\/assistant$/, () => import('./assistant.js'), 'assistant'],
@@ -24,7 +23,6 @@ const ROUTES = [
 const NAV = [
   ['home', '#/', 'Home', null],
   ['programmes', '#/programmes', 'Programmes', 'programmes'],
-  ['followups', '#/follow-ups', 'Follow-up requests', 'participants'],
   ['insights', '#/insights', 'Insights', 'insights'],
   ['assistant', '#/assistant', 'Insight assistant', 'assistant'],
   ['reports', '#/reports', 'Reports', 'reports'],

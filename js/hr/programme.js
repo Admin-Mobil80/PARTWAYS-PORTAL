@@ -78,8 +78,7 @@ async function overview(el, { programme: p }) {
     p.status === 'draft' ? h('div', { class: 'notice' }, 'This programme is a draft. Set out your objectives, review the proposed guide, try it in a live preview, then activate it to start inviting people.', h('a', { class: 'btn sm', href: `#/programmes/${p.id}/guide` }, 'Open the guide')) : null,
     h('div', { class: 'stats' },
       stat('Invited', c.participants), stat('Started', Math.max(0, started)), stat('Submitted', c.submitted),
-      stat('Declined', c.declined), stat('Expired', c.expired), stat('Awaiting employee review', c.awaiting_review),
-      stat('Follow-up requests', summary?.followUps, 'open')),
+      stat('Declined', c.declined), stat('Expired', c.expired), stat('Awaiting employee review', c.awaiting_review)),
     h('div', { class: 'grid g2' },
       h('section', { class: 'card stack' }, h('h3', 'Setup'),
         h('dl', { class: 'kv' },
@@ -331,7 +330,7 @@ function settings(el, p) {
   mount(el, h('form', { class: 'stack', style: { maxWidth: '860px', gap: '1.25rem' }, onsubmit: async (e) => {
     e.preventDefault();
     try {
-      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, intro: f.intro, completionMessage: f.completionMessage, followUpWording: f.followUpWording, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reportingMode: f.reportingMode, reportingMinimum: f.reportingMinimum, reminder: f.reminder, messages: f.messages } });
+      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reportingMode: f.reportingMode, reportingMinimum: f.reportingMinimum, reminder: f.reminder, messages: f.messages } });
       await refreshProgrammes();
       toast('Settings saved.');
     } catch (err) { toast(err.message, { kind: 'bad' }); }
@@ -341,8 +340,7 @@ function settings(el, p) {
     ta('Description (internal)', 'description', null, 2),
     ta('Invitation page introduction', 'intro', 'Shown to employees on the invitation page.'),
     ta('How feedback is used', 'feedbackNotice', 'Plain-language notice shown before the interview.'),
-    ta('Completion message', 'completionMessage', null, 2),
-    ta('Follow-up wording', 'followUpWording', 'Explains what happens if the employee asks to be contacted.', 2)),
+    ta('Completion message', 'completionMessage', null, 2),),
   h('section', { class: 'card' }, h('h3', 'Interview options'),
     checks('Formats offered', Object.entries(MODE_LABEL), f.modes, 'modes'),
     checks('Languages', state.meta.languages.map((l) => [l.code, l.label]), f.languages, 'languages'),

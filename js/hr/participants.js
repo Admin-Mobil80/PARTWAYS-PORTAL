@@ -1,5 +1,5 @@
 // Participation administration: invitations by email and/or WhatsApp (to every channel a
-// person has; WhatsApp is simulated until connected), imports, follow-ups.
+// person has; WhatsApp is simulated until connected) and imports.
 // This view is operational only: it never shows what anyone said in an interview.
 import { h, mount, fmt, toast, dialog, confirmDialog, debounce } from '../lib.js';
 import { state, hr, can, pageHead, STATUS_LABEL, MODE_LABEL, LANG_LABEL, loading, errorBox, refreshProgrammes } from './core.js';
@@ -7,7 +7,6 @@ import { setCrumbs, updateCredits } from './app.js';
 
 const STATUS_KIND = { submitted: 'good', declined: '', expired: 'warn', cancelled: '', withdrawn: '', awaiting_review: 'accent', in_progress: 'info', abandoned: 'warn', invited: '', not_started: '' };
 const INV_LABEL = { prepared: 'Prepared, not sent', sent: 'Sent', opened: 'Opened', responded: 'Responded', cancelled: 'Cancelled', expired: 'Expired' };
-const FU_LABEL = { requested: 'Requested', acknowledged: 'Acknowledged', scheduled: 'Scheduled', completed: 'Completed' };
 
 export async function renderProgrammeParticipants(el, programme) {
   let q = '', status = '', population = '';
@@ -25,7 +24,7 @@ export async function renderProgrammeParticipants(el, programme) {
     programme.status !== 'active' ? h('div', { class: 'notice warn' }, programme.status === 'draft' ? 'Activate the programme before sending invitations. You can add people now.' : `This programme is ${programme.status}. Invitations and reminders cannot be sent.`) : null,
     h('div', { class: 'filters', role: 'search' },
       h('label', 'Search', h('input', { type: 'search', placeholder: 'Interview Id, last digits or unit', style: { minHeight: '34px', width: '240px' }, oninput: (e) => search(e.target.value) })),
-      h('label', 'Status', h('select', { onchange: (e) => { status = e.target.value; load(); } }, h('option', { value: '' }, 'All'), h('option', { value: 'follow_up' }, 'Open follow-up requests'), Object.entries(STATUS_LABEL).map(([k, v]) => h('option', { value: k }, v)))),
+      h('label', 'Status', h('select', { onchange: (e) => { status = e.target.value; load(); } }, h('option', { value: '' }, 'All'), Object.entries(STATUS_LABEL).map(([k, v]) => h('option', { value: k }, v)))),
       state.org.demo && h('label', 'Data', h('select', { onchange: (e) => { population = e.target.value; load(); } }, h('option', { value: '' }, 'All'), h('option', { value: 'demo' }, 'Demonstration data'), h('option', { value: 'evaluation' }, 'Added during evaluation'))) || null,
       h('span', { class: 'spacer' }),
       can('participants') ? h('button', { class: 'btn sm', onclick: () => addDialog(programme, load) }, 'Add a person') : null,
@@ -35,8 +34,8 @@ export async function renderProgrammeParticipants(el, programme) {
 }
 
 const CHANNEL = { email: 'Email', whatsapp: 'WhatsApp' };
-// Masked contact details, or the full ones when the person asked to be contacted.
-const contactLines = (p) => [p.contactEmail || p.email, p.contactMobile || p.mobile].filter(Boolean);
+// Contact details are always masked: they are used only to send the invitation.
+const contactLines = (p) => [p.email, p.mobile].filter(Boolean);
 const sentWord = (simulated, channels) => `${channels?.length ? ` by ${channels.map((c) => CHANNEL[c] || c).join(' and ')}` : ''}${simulated ? ' (recorded, not delivered)' : ''}`;
 
 function participantTable(list, programme, reload) {
@@ -49,7 +48,7 @@ function participantTable(list, programme, reload) {
         h('td', { class: 'small', style: { whiteSpace: 'nowrap' } }, contactLines(p).map((c) => h('div', c))),
         h('td', { class: 'small' }, [p.businessUnit, p.location, p.tenureBand].filter(Boolean).join(' · ')),
         h('td', { class: 'small' }, fmt.date(p.departureDate)),
-        h('td', h('span', { class: `badge ${STATUS_KIND[p.status] || ''}` }, STATUS_LABEL[p.status] || p.status), p.followUp && p.followUp.status !== 'completed' ? h('span', { class: 'badge accent', style: { marginLeft: '.3rem' } }, 'Follow-up') : null),
+        h('td', h('span', { class: `badge ${STATUS_KIND[p.status] || ''}` }, STATUS_LABEL[p.status] || p.status)),
         h('td', { class: 'small' }, INV_LABEL[p.invitation.status] || p.invitation.status, p.invitation.reminders?.length ? ` · ${p.invitation.reminders.length} reminder${p.invitation.reminders.length > 1 ? 's' : ''}` : ''),
         h('td', { class: 'small' }, fmt.date(p.invitation.deadline))))))));
 }
@@ -73,15 +72,14 @@ async function detail(id, programme, reload) {
     body: h('div', { class: 'stack' },
       h('div', { class: 'row' }, h('span', { class: `badge ${STATUS_KIND[p.status] || ''}` }, STATUS_LABEL[p.status] || p.status), p.population === 'evaluation' ? h('span', { class: 'badge info' }, 'Added during evaluation') : p.population === 'demo' ? h('span', { class: 'badge demo' }, 'Demonstration record') : null),
       h('dl', { class: 'kv' },
-        ...[['Email', p.contactEmail, p.email], ['Mobile (WhatsApp)', p.contactMobile, p.mobile]].filter(([, full, masked]) => full || masked).flatMap(([label, full, masked]) => [h('dt', label),
-          h('dd', full || masked, h('span', { class: 'small muted' }, full ? ' · shown because they asked to be contacted' : ' · masked to keep feedback de-identified'))]),
+        ...[['Email', p.email], ['Mobile (WhatsApp)', p.mobile]].filter(([, masked]) => masked).flatMap(([label, masked]) => [h('dt', label),
+          h('dd', masked, h('span', { class: 'small muted' }, ' · masked to keep feedback de-identified'))]),
         h('dt', 'Invitations go by'), h('dd', p.invitation.channel || '–'), h('dt', 'Segment'), h('dd', [p.businessUnit, p.function, p.location, p.tenureBand, p.roleLevel].filter(Boolean).join(' · ') || '–'),
         h('dt', 'Leaving'), h('dd', fmt.date(p.departureDate)), h('dt', 'Preferred language'), h('dd', LANG_LABEL[p.preferredLanguage] || p.preferredLanguage),
         h('dt', 'Response deadline'), h('dd', fmt.date(p.invitation.deadline)),
         p.declineReason ? [h('dt', 'Reason for declining'), h('dd', p.declineReason)] : null),
       h('div', h('h4', 'Timeline'), timeline.length ? h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, timeline.map(([t, at]) => h('li', `${fmt.dateTime(at)}: ${t}`))) : h('p', { class: 'small muted' }, 'Nothing yet.')),
       p.sessions.length ? h('div', h('h4', 'Interviews'), h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, p.sessions.map((s) => h('li', `${(s.modesUsed || [s.mode]).map((m) => MODE_LABEL[m]).join(' then ')} · ${fmt.title(s.status)} · guide v${s.guideVersion ?? '–'} · ${LANG_LABEL[s.language] || s.language}`)))) : null,
-      p.followUp ? followUpBox(p, () => { d.close(); reload(); }) : null,
       h('p', { class: 'small muted', style: { margin: 0 } }, 'What this person said is only available through insights, after they review and submit it, and within the reporting rules.'),
       can('participants') && !done ? h('div', { class: 'row' },
         p.invitation.status === 'prepared' && canSend ? act('Preview and send invitation', () => sendDialog(p, 'invitation', () => { d.close(); reload(); })) : null,
@@ -91,18 +89,6 @@ async function detail(id, programme, reload) {
         act('Cancel invitation', async () => { if (await confirmDialog('Cancel this invitation?', 'The link will stop working. This cannot be undone, but you can add the person again.', { confirmLabel: 'Cancel invitation', kind: 'danger' })) await closeAnd(() => hr(`/api/hr/participants/${p.id}/cancel`, { method: 'POST' })); }, 'danger')) : null),
     actions: [{ label: 'Close' }],
   });
-}
-
-function followUpBox(p, after) {
-  const note = h('input', { type: 'text', placeholder: 'Optional note, for example who will call', 'aria-label': 'Follow-up note' });
-  return h('div', { class: 'card soft stack' },
-    h('div', { class: 'row between' }, h('h4', { style: { margin: 0 } }, 'Follow-up request'), h('span', { class: 'badge accent' }, FU_LABEL[p.followUp.status])),
-    h('p', { class: 'small', style: { margin: 0 } }, `Requested ${fmt.dateTime(p.followUp.requestedAt)}. ${p.followUp.note || ''}`),
-    h('p', { class: 'small muted', style: { margin: 0 } }, `The employee asked for someone at ${state.org.shortName} to contact them. PartWays does not handle this contact.`),
-    (p.followUp.history || []).length ? h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, p.followUp.history.map((x) => h('li', `${fmt.dateTime(x.at)}: ${FU_LABEL[x.status]}${x.note ? `. ${x.note}` : ''}`))) : null,
-    can('participants') && p.followUp.status !== 'completed' ? h('div', { class: 'row' }, note, ['acknowledged', 'scheduled', 'completed'].map((s) => h('button', { class: 'btn sm', type: 'button', onclick: async () => {
-      try { await hr(`/api/hr/participants/${p.id}/follow-up`, { method: 'POST', body: { status: s, note: note.value } }); toast(`Marked as ${FU_LABEL[s].toLowerCase()}.`); after(); } catch (err) { toast(err.message, { kind: 'bad' }); }
-    } }, `Mark ${FU_LABEL[s].toLowerCase()}`))) : null);
 }
 
 async function sendDialog(p, kind, after) {
@@ -190,17 +176,4 @@ function importDialog(programme, reload) {
       } }],
   });
   return d;
-}
-
-export async function renderFollowUps(el) {
-  setCrumbs('Follow-up requests');
-  mount(el, loading());
-  let list;
-  try { list = (await hr('/api/hr/participants?status=follow_up')).participants; } catch (err) { return mount(el, errorBox(err, () => renderFollowUps(el))); }
-  const progName = (id) => state.programmes.find((p) => p.id === id)?.name || id;
-  mount(el, pageHead('Follow-up requests', `Departing employees who asked for someone at ${state.org.shortName} to contact them. These are separate from interview feedback, and are handled by your team, not by PartWays.`),
-    list.length ? h('div', { class: 'stack' }, list.map((p) => h('div', { class: 'card stack' },
-      h('div', { class: 'row between' }, h('div', h('strong', { class: 'mono' }, p.interviewId), h('span', { class: 'small muted' }, ` · ${contactLines(p).join(' · ')} · ${progName(p.programmeId)}`)), h('button', { class: 'btn sm', onclick: async () => detail(p.id, state.programmes.find((x) => x.id === p.programmeId) || {}, () => renderFollowUps(el)) }, 'Open record')),
-      followUpBox(p, () => renderFollowUps(el)))))
-      : h('div', { class: 'empty' }, h('h3', 'No open follow-up requests'), h('p', 'When an employee asks to be contacted, the request appears here.')));
 }

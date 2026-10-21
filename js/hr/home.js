@@ -101,11 +101,8 @@ async function attention() {
   (async () => {
     const items = [];
     try {
-      const fups = can('participants') ? await hr('/api/hr/participants?status=follow_up') : { participants: [] };
       const credits = state.me?.credits;
       if (credits && !credits.unlimited && credits.balance === 0) items.push(['You have no interview credits left. Buy credits to send more invitations.', '#/billing']);
-      const fu = fups.participants.filter((p) => p.followUp?.status === 'requested');
-      if (fu.length) items.push([`${fu.length} follow-up request${fu.length > 1 ? 's' : ''} not yet acknowledged`, '#/follow-ups']);
       for (const p of state.programmes.filter((x) => x.hasDraft && can('edit'))) items.push([`${p.name} has guide changes that are not active yet`, `#/programmes/${p.id}/guide`]);
       for (const p of state.programmes.filter((x) => x.processing)) items.push([`${p.name}: ${p.processing} submitted interview(s) still processing`, `#/programmes/${p.id}`]);
     } catch (err) { items.push([err.message, null]); }
@@ -124,8 +121,7 @@ export function programmeCards(list) {
     h('span', { class: 'small muted' }, `${p.counts.participants} invited · ${p.counts.submitted || 0} submitted · ${p.objectives} objective${p.objectives === 1 ? '' : 's'} · ${p.reportingMode === 'aggregate' ? 'aggregate reporting' : 'individual reporting'}`),
     h('span', { class: 'row', style: { gap: '.35rem' } },
       p.activeVersion ? h('span', { class: 'badge' }, `Guide v${p.activeVersion}`) : null,
-      p.hasDraft ? h('span', { class: 'badge warn' }, 'Unpublished changes') : null,
-      p.followUps ? h('span', { class: 'badge accent' }, `${p.followUps} follow-up${p.followUps > 1 ? 's' : ''}`) : null))));
+      p.hasDraft ? h('span', { class: 'badge warn' }, 'Unpublished changes') : null))));
 }
 
 export async function render(el) {
