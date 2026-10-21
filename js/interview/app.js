@@ -1,8 +1,9 @@
 // Employee interview app: invitation → format → (preparation) → conversation → review → submitted.
 import { h, mount, api, streamApi, toast, dialog, confirmDialog, fmt, store, icon, watchForUpdates } from '../lib.js';
 import { t, setLang, getLang } from '../i18n.js';
-import { Speaker, Listener, SentenceSplitter, micCheck, voiceSupport } from '../voice.js';
+import { Speaker, Listener, SentenceSplitter, micCheck, voiceSupport, silenceLeftoverSpeech } from '../voice.js';
 
+silenceLeftoverSpeech();
 watchForUpdates({ message: () => t('updateAvailable'), note: () => t('updateNote'), reload: () => t('reload'), later: () => t('later') });
 const app = document.getElementById('app');
 let config = null;
@@ -277,7 +278,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     st.lastTick = now;
     if (!st.extendAsked && st.activeMs > durMax && !st.ended) { st.extendAsked = true; askExtend(); }
   }, 1000);
-  window.addEventListener('hashchange', () => clearInterval(ticker), { once: true });
+  window.addEventListener('hashchange', () => cleanupAll(), { once: true });
+  window.addEventListener('pagehide', () => cleanupAll(), { once: true });
 
   function renderTopics(topics) {
     const done = topics.filter((tp) => tp.status !== 'pending').length;

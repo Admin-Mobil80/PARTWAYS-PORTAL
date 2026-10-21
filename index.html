@@ -326,6 +326,8 @@
   </footer>
   <script type="module">
     import { countryOptions, guessCountry } from '/js/countries.js';
+    // Silence an interviewer still talking from an interview page left in this tab.
+    try { speechSynthesis.cancel(); } catch { /* unsupported */ }
     const $ = (id) => document.getElementById(id);
     const sel = $('su-country');
     const guess = guessCountry();

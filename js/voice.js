@@ -48,11 +48,22 @@ export class SentenceSplitter {
   flush() { const s = this.buf.trim(); this.buf = ''; if (s) this.onSentence(s); }
 }
 
+// Browsers (Chrome especially) can keep speaking queued sentences after the page is
+// left, so they carry on over the next page. Speech stops whenever the page is hidden
+// or left, and other pages silence anything left over when they load.
+export function silenceLeftoverSpeech() {
+  try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch { /* unsupported */ }
+}
+
+const speakers = new Set();
+window.addEventListener('pagehide', () => { for (const s of speakers) s.stop(); silenceLeftoverSpeech(); });
+
 export class Speaker {
   constructor({ config, lang, voice, sessionId, token }) {
     this.cfg = config; this.lang = lang; this.voice = voice; this.sessionId = sessionId; this.token = token;
     this.queue = []; this.playing = false; this.audio = null; this.onstart = null; this.onend = null; this.spokenText = '';
     this.generation = 0;
+    speakers.add(this);
   }
   get useServer() { return this.cfg.voice.tts === 'elevenlabs'; }
   say(text) {

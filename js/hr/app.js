@@ -3,6 +3,8 @@ import { h, mount, api, toast, store, watchForUpdates } from '../lib.js';
 import { countryOptions, guessCountry } from '../countries.js';
 import { state, ROLES, can, effectiveRole, setRole, setWorkspace, signOut, hr, refreshMe, refreshProgrammes, refreshThemes, plural } from './core.js';
 
+// Silence an interviewer still talking from an interview page left in this tab.
+try { speechSynthesis.cancel(); } catch { /* unsupported */ }
 watchForUpdates();
 
 const ROUTES = [
