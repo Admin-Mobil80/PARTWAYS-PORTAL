@@ -144,7 +144,7 @@ export async function render(el) {
 }
 
 export async function renderPortfolio(el) {
-  setCrumbs(['Home', '#/'], 'Programmes');
+  setCrumbs('Programmes');
   mount(el, loading());
   try { await refreshProgrammes(); } catch (err) { return mount(el, errorBox(err, () => renderPortfolio(el))); }
   const groups = [['Active and paused', ['active', 'paused']], ['Drafts', ['draft']], ['Archived', ['archived']]];
