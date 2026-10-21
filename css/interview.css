@@ -1,6 +1,8 @@
 /* Employee interview surfaces: calm, focused, phone-first. */
 body { background: var(--surface); }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px 4rem; }
+/* The conversation's controls sit at the bottom of the screen, with no extra space below them. */
+.wrap:has(.convo) { padding-bottom: 0; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 14px 16px; max-width: 760px; margin: 0 auto; flex-wrap: wrap; }
 .topbar .who { display: grid; gap: 2px; }
 .demo-strip { background: var(--demo-soft); color: var(--demo); font-size: .8rem; text-align: center; padding: .3rem 1rem; font-weight: 550; }
@@ -18,7 +20,10 @@ body { background: var(--surface); }
 .meter > span { display: block; height: 100%; background: var(--series-1); width: 0; transition: width .08s; }
 
 /* Conversation */
-.convo { display: grid; grid-template-rows: auto 1fr auto; min-height: calc(100vh - 120px); gap: .75rem; padding-top: .5rem; }
+.convo { display: grid; grid-template-rows: auto 1fr auto; min-height: calc(100dvh - 120px); gap: .75rem; padding-top: .5rem; }
+/* Status and the folded topics share one line, so the question sits right below them. */
+.convo-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; }
+.convo-head .topics-box[open] { flex-basis: 100%; }
 .status { display: flex; align-items: center; gap: .6rem; font-weight: 600; font-size: .95rem; padding: .55rem .9rem; border-radius: 999px; background: var(--panel-2); width: fit-content; }
 .status .light { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
 .status[data-state="listening"] .light, .status[data-state="your_turn"] .light { background: var(--good); box-shadow: 0 0 0 4px var(--good-soft); }
@@ -30,6 +35,8 @@ body { background: var(--surface); }
 .stage { display: grid; align-content: start; gap: 1rem; }
 .current-q { font-size: clamp(1.15rem, 3vw, 1.45rem); line-height: 1.45; font-weight: 500; min-height: 3em; }
 .live-you { font-size: 1rem; color: var(--ink-2); min-height: 1.5em; font-style: italic; }
+.topics-box summary { cursor: pointer; font-size: .82rem; color: var(--muted); font-weight: 550; width: fit-content; }
+.topics-box[open] summary { margin-bottom: .5rem; }
 .topics { display: flex; flex-wrap: wrap; gap: .4rem; font-size: .8rem; }
 .topics .t { padding: .2rem .55rem; border-radius: 999px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
 .topics .t.explored, .topics .t.insufficient { color: var(--ink-2); background: var(--accent-soft); border-color: transparent; }
@@ -45,6 +52,8 @@ body { background: var(--surface); }
 .composer { display: flex; gap: .5rem; align-items: flex-end; }
 .composer textarea { min-height: 48px; max-height: 160px; }
 .transcript-panel { border: 1px solid var(--line); border-radius: var(--radius); padding: .75rem; max-height: 40vh; overflow: auto; background: var(--panel); }
+/* Text mode: the conversation is the page, kept scrolled to the latest message above the typing box. */
+.convo.text .transcript-panel { max-height: none; overflow: visible; border: 0; padding: 0; background: none; }
 
 /* Review */
 .pt { display: grid; grid-template-columns: 1fr auto; gap: .5rem; padding: .7rem 0; border-bottom: 1px solid var(--line); align-items: start; }

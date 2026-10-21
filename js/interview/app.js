@@ -254,6 +254,9 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   const qEl = h('div', { class: 'current-q', 'aria-live': 'polite' });
   const liveEl = h('div', { class: 'live-you' });
   const topicsEl = h('div', { class: 'topics', 'aria-label': t('topicsHeading') });
+  // Topics fold into one line so the question stays at the top of the screen.
+  const topicsSummary = h('summary');
+  const topicsBox = h('details', { class: 'topics-box' }, topicsSummary, topicsEl);
   const chatEl = h('div', { class: 'chat', role: 'log', 'aria-live': 'polite' });
   const noticeEl = h('div', { class: 'stack' });
   const input = h('textarea', { rows: 2, placeholder: t('typeHere'), 'aria-label': t('typeHere'), onkeydown: (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } } });
@@ -277,7 +280,9 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   window.addEventListener('hashchange', () => clearInterval(ticker), { once: true });
 
   function renderTopics(topics) {
-    topicsEl.replaceChildren(h('span', { class: 'muted' }, `${t('topicsHeading')}:`), ...topics.map((tp) => {
+    const done = topics.filter((tp) => tp.status !== 'pending').length;
+    topicsSummary.textContent = `${t('topicsHeading')} · ${t('topicsProgress', { done, total: topics.length })}`;
+    topicsEl.replaceChildren(...topics.map((tp) => {
       const label = { explored: t('topicDone'), insufficient: t('topicDone'), skipped: t('topicSkipped'), declined: t('topicDeclined'), pending: t('topicNext') }[tp.status];
       return h('span', { class: `t ${tp.status}`, title: label }, tp.label, h('span', { class: 'sr-only' }, ` (${label})`));
     }));
@@ -289,6 +294,18 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
       turn.role === 'employee' ? h('div', h('button', { class: 'linkbtn small', onclick: () => correctTurn(turn) }, t('correct'))) : null)));
     transcriptPanel.replaceChildren(chatEl);
     transcriptPanel.scrollTop = transcriptPanel.scrollHeight;
+    keepInView();
+  }
+  // Keeps the interviewer's latest words on screen: the question in voice mode,
+  // the end of the conversation (just above the typing box) in text mode.
+  // A short timer rather than an animation frame, which some browsers pause in the background.
+  let viewTimer = 0;
+  function keepInView() {
+    clearTimeout(viewTimer);
+    viewTimer = setTimeout(() => {
+      if (st.voice && !st.transcriptOpen) qEl.scrollIntoView({ block: 'nearest' });
+      else window.scrollTo({ top: document.documentElement.scrollHeight });
+    }, 30);
   }
   function correctTurn(turn) {
     const ta = h('textarea', { rows: 4 }, turn.text);
@@ -429,6 +446,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
           reply += m.text;
           qEl.textContent = reply || '';
           live.lastChild.textContent = reply;
+          keepInView();
           splitter?.push(m.text);
         } else if (m.t === 'done') done = m;
         else if (m.t === 'error') failed = m.message;
@@ -496,8 +514,8 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   render(
     ctx.session.preview ? h('div', { class: 'notice demo', style: { marginTop: '.5rem' } }, t('previewBanner')) : null,
     !config.llm.live ? h('div', { class: 'notice warn', style: { marginTop: '.5rem' } }, t('offline')) : null,
-    h('div', { class: 'convo' },
-      h('div', { class: 'stack' }, statusEl, topicsEl),
+    h('div', { class: `convo ${st.voice ? 'voice' : 'text'}` },
+      h('div', { class: 'convo-head' }, statusEl, topicsBox),
       h('div', { class: 'stage' }, st.voice ? qEl : null, st.voice ? liveEl : null, noticeEl, transcriptPanel),
       controls),
   );

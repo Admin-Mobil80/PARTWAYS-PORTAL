@@ -124,27 +124,50 @@ async function sendDialog(p, kind, after) {
 
 const FIELDS = [['email', 'Email address', 'email'], ['mobile', 'Mobile number (WhatsApp)', 'tel'], ['departureDate', 'Leaving date', 'date'], ['businessUnit', 'Business unit', 'text'], ['function', 'Function', 'text'], ['location', 'Location', 'text']];
 
+// Adding someone to an active programme sends their invitation in the same step.
 function addDialog(programme, reload) {
   const v = { preferredLanguage: 'en' };
+  const active = programme.status === 'active';
+  const add = async (send) => {
+    const r = await hr('/api/hr/participants', { method: 'POST', body: { ...v, language: v.preferredLanguage, programmeId: programme.id, send } });
+    const id = r.participant.interviewId;
+    if (!send) toast(`Added as ${id}. The invitation is prepared, not sent.`);
+    else if (r.sendError) toast(`Added as ${id}, but the invitation was not sent: ${r.sendError}`, { kind: 'bad', timeout: 9000 });
+    else { toast(`Added as ${id} and invited. ${r.message || ''}`, { timeout: 8000 }); if (r.creditUsed) updateCredits(); }
+    reload(); refreshProgrammes();
+  };
+  const credits = state.me?.credits;
+  const note = active
+    ? h('div', { class: 'notice' }, `The invitation goes to every channel you add, as soon as you choose “Add and send invitation”.${credits && !credits.unlimited ? ` It uses 1 credit; you have ${credits.balance}.` : ''}`)
+    : h('div', { class: 'notice warn' }, 'This programme is not active yet, so the person is added and their invitation prepared. Activate the programme to send it.');
   const inputs = FIELDS.map(([k, label, type, req]) => h('div', { class: 'field', style: { margin: 0 } }, h('label', { for: `f-${k}` }, label, req ? '' : h('span', { class: 'muted' }, ' (optional)')),
     k === 'mobile' ? h('span', { class: 'hint' }, 'International format, for example +44 7700 900123.') : null,
     h('input', { type, id: `f-${k}`, oninput: (e) => { v[k] = e.target.value; } })));
   const sel = (k, label, opts) => h('div', { class: 'field', style: { margin: 0 } }, h('label', { for: `f-${k}` }, label), h('select', { id: `f-${k}`, onchange: (e) => { v[k] = e.target.value; } }, h('option', { value: '' }, '–'), opts.map(([a, b]) => h('option', { value: a, selected: v[k] === a }, b))));
   dialog({
     title: 'Add a departing employee', wide: true,
-    body: h('div', { class: 'stack' }, h('p', { class: 'small ink2', style: { margin: 0 } }, 'Add an email address, a mobile number, or both: the invitation goes to every one you add. No name is needed. Each person gets a PartWays Interview Id, and their feedback is only ever shown under that Id.'), h('div', { class: 'grid g2' }, inputs,
+    body: h('div', { class: 'stack' }, h('p', { class: 'small ink2', style: { margin: 0 } }, 'Add an email address, a mobile number, or both. No name is needed. Each person gets a PartWays Interview Id, and their feedback is only ever shown under that Id.'), h('div', { class: 'grid g2' }, inputs,
       sel('tenureBand', 'Tenure band', ['Under 6 months', '6–12 months', '1–3 years', '3–5 years', '5+ years'].map((x) => [x, x])),
       sel('roleLevel', 'Role level', ['Individual contributor', 'Team lead', 'Manager', 'Senior leader'].map((x) => [x, x])),
-      sel('preferredLanguage', 'Preferred language', [['en', 'English'], ['de', 'German'], ['fr', 'French']]))),
-    actions: [{ label: 'Cancel' }, { label: 'Add', kind: 'primary', onClick: async () => {
-      const r = await hr('/api/hr/participants', { method: 'POST', body: { ...v, language: v.preferredLanguage, programmeId: programme.id } });
-      toast(`Added as ${r.participant.interviewId}. The invitation is prepared but not sent.`);
-      reload(); refreshProgrammes();
-    } }],
+      sel('preferredLanguage', 'Preferred language', [['en', 'English'], ['de', 'German'], ['fr', 'French']])), note),
+    actions: [{ label: 'Cancel' },
+      ...(active ? [{ label: 'Add without sending', onClick: () => add(false) }] : []),
+      { label: active ? 'Add and send invitation' : 'Add', kind: 'primary', onClick: () => add(active) }],
   });
 }
 
+// Importing into an active programme sends everyone's invitation in the same step.
 function importDialog(programme, reload) {
+  const active = programme.status === 'active';
+  const commit = async (send) => {
+    if (!validated) { toast('Check the rows first.', { kind: 'bad' }); return false; }
+    const r = await hr('/api/hr/participants/import/commit', { method: 'POST', body: { programmeId: programme.id, rows: validated.rows.map((x) => x.input), send } });
+    toast(send
+      ? `${r.created} added and ${r.sent} invited${r.notSent ? `; ${r.notSent} could not be sent and stay prepared` : ''}${r.skipped ? `. ${r.skipped} skipped` : ''}.`
+      : `${r.created} added, ${r.skipped} skipped. Invitations are prepared, not sent.`, { kind: r.notSent ? 'bad' : '', timeout: 8000 });
+    if (send && r.sent) updateCredits();
+    reload(); refreshProgrammes();
+  };
   const sample = 'email,mobile,business unit,function,location,tenure band,role level,departure date,language\nalex.leaver@example.com,+44 7700 900801,Operations,Transport planning,Leeds,1–3 years,Individual contributor,2026-11-14,en\n,+49 151 00900801,Sales,Account management,Berlin,3–5 years,Manager,30/11/2026,de\nsam.leaver@example.com,,Finance,Reporting,London,5+ years,Manager,2026-12-01,en';
   const ta = h('textarea', { rows: 8, id: 'csv', placeholder: sample, style: { fontFamily: 'ui-monospace, monospace', fontSize: '.82rem' } });
   const file = h('input', { type: 'file', accept: '.csv,text/csv,.txt', onchange: async (e) => { const f = e.target.files[0]; if (f) ta.value = await f.text(); } });
@@ -153,7 +176,7 @@ function importDialog(programme, reload) {
   const d = dialog({
     title: 'Import departing employees', wide: true,
     body: h('div', { class: 'stack' },
-      h('p', { class: 'small ink2', style: { margin: 0 } }, 'Paste rows or choose a CSV file. The first row must be a header with “email”, “mobile”, or both, and each row needs at least one of them. Invitations go to every one given. Names are not needed; a name column is ignored. Rows are checked before anything is added, and duplicates by email or mobile are skipped.'),
+      h('p', { class: 'small ink2', style: { margin: 0 } }, 'Paste rows or choose a CSV file. The first row must be a header with “email”, “mobile”, or both, and each row needs at least one of them. Invitations go to every one given. Names are not needed; a name column is ignored. Rows are checked before anything is added, and duplicates by email or mobile are skipped.' + (active ? ' Choosing “Import and send invitations” invites everyone straight away, using 1 credit each.' : ' This programme is not active yet, so invitations are prepared; activate it to send them.')),
       h('div', { class: 'row' }, file, h('button', { class: 'linkbtn small', type: 'button', onclick: () => { ta.value = sample; } }, 'Use example rows')),
       h('label', { for: 'csv', class: 'sr-only' }, 'CSV rows'), ta, result),
     actions: [{ label: 'Cancel' },
@@ -168,12 +191,8 @@ function importDialog(programme, reload) {
           h('p', { class: 'small muted', style: { margin: 0 } }, 'Rows with errors or duplicates will be skipped. Fix them in your file and import again if needed.')));
         return false;
       } },
-      { label: 'Import ready rows', kind: 'primary', onClick: async () => {
-        if (!validated) { toast('Check the rows first.', { kind: 'bad' }); return false; }
-        const r = await hr('/api/hr/participants/import/commit', { method: 'POST', body: { programmeId: programme.id, rows: validated.rows.map((x) => x.input) } });
-        toast(`${r.created} added, ${r.skipped} skipped. Invitations are prepared but not sent.`);
-        reload(); refreshProgrammes();
-      } }],
+      ...(active ? [{ label: 'Import without sending', onClick: () => commit(false) }] : []),
+      { label: active ? 'Import and send invitations' : 'Import ready rows', kind: 'primary', onClick: () => commit(active) }],
   });
   return d;
 }
