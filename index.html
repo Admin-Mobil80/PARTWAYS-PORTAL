@@ -34,7 +34,7 @@
     .mock { display: grid; gap: .9rem; }
     .signup { padding: 1.4rem; box-shadow: var(--shadow); }
     .signup .field { margin: 0; }
-    .how-intro { display: grid; grid-template-columns: 1.2fr .8fr; gap: 2.5rem; align-items: start; }
+    .how-intro { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2.5rem; align-items: start; }
     @media (max-width: 880px) { .how-intro { grid-template-columns: 1fr; } }
     #signup { scroll-margin-top: 80px; }
     .phone { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 1rem; box-shadow: var(--shadow); }
@@ -52,13 +52,13 @@
     .strip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .6rem 2rem; justify-content: center; font-size: .9rem; color: var(--ink-2); font-weight: 550; }
     .strip li::before { content: "✓"; color: var(--good); margin-right: .45rem; }
 
-    .steps4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; counter-reset: s; list-style: none; padding: 0; margin: 2rem 0 0; }
-    .steps4 li { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem; counter-increment: s; }
-    .steps4 li::before { content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: .85rem; margin-bottom: .6rem; }
-    .steps4 h3 { font-size: 1rem; margin: 0 0 .35rem; }
+    /* The four steps sit beside the WhatsApp example, so both columns fill the same height. */
+    .steps4 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; counter-reset: s; list-style: none; padding: 0; margin: 1.5rem 0 0; }
+    @media (max-width: 560px) { .steps4 { grid-template-columns: 1fr; } }
+    .steps4 li { display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto 1fr; column-gap: .75rem; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; counter-increment: s; }
+    .steps4 li::before { content: counter(s); grid-row: span 2; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: .85rem; }
+    .steps4 h3 { font-size: 1rem; margin: .2rem 0 .25rem; }
     .steps4 p { margin: 0; font-size: .9rem; color: var(--ink-2); }
-    @media (max-width: 880px) { .steps4 { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 520px) { .steps4 { grid-template-columns: 1fr; } }
 
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 2rem; }
     @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
@@ -174,6 +174,12 @@
         <div class="how-intro">
         <div>
         <p class="lede">Most exit interviews are skipped, rushed, or too polite to be useful. PartWays is independent of your organisation, so people say what actually happened, and it does the interviewing and the analysis for you.</p>
+        <ol class="steps4">
+          <li><h3>Say what you want to learn</h3><p>Set objectives such as “Is hybrid working a factor?”. PartWays proposes the interview plan. You can edit every question.</p></li>
+          <li><h3>Invite by WhatsApp</h3><p>Add departing employees by mobile number. Each invitation gets its own PartWays Interview Id. No names needed.</p></li>
+          <li><h3>They talk or type</h3><p>An AI interviewer holds a natural conversation, follows up on what matters, and respects anything they would rather not discuss.</p></li>
+          <li><h3>They review, you learn</h3><p>The employee corrects and approves their summary. You see themes, trends and comparisons built only on what people confirmed.</p></li>
+        </ol>
         </div>
         <div class="mock how-mock" aria-hidden="true">
           <div class="phone">
@@ -191,12 +197,6 @@
           </div>
         </div>
         </div>
-        <ol class="steps4">
-          <li><h3>Say what you want to learn</h3><p>Set objectives such as “Is hybrid working a factor?”. PartWays proposes the interview plan. You can edit every question.</p></li>
-          <li><h3>Invite by WhatsApp</h3><p>Add departing employees by mobile number. Each invitation gets its own PartWays Interview Id. No names needed.</p></li>
-          <li><h3>They talk or type</h3><p>An AI interviewer holds a natural conversation, follows up on what matters, and respects anything they would rather not discuss.</p></li>
-          <li><h3>They review, you learn</h3><p>The employee corrects and approves their summary. You see themes, trends and comparisons built only on what people confirmed.</p></li>
-        </ol>
 
         <div class="two">
           <div class="card">

@@ -3,7 +3,7 @@ import { h, mount, fmt, toast, confirmDialog } from '../lib.js';
 import { state, hr, pageHead, loading, errorBox, plural } from './core.js';
 import { setCrumbs, updateCredits } from './app.js';
 
-const KIND = { free_grant: 'Free interviews', purchase: 'Credits bought', invite: 'Invitation sent' };
+const KIND = { free_grant: 'Free interviews', purchase: 'Credits bought', invite: 'Invitation sent', adjustment: 'Adjusted by PartWays' };
 
 export async function render(el, _params, query = {}) {
   setCrumbs('Credits and billing');
