@@ -34,7 +34,7 @@ export async function render(el) {
         can('edit') ? h('button', { class: 'btn primary', onclick: async () => { try { const r = await hr('/api/hr/org', { method: 'PUT', body: { name: org.name, shortName: org.shortName, brandColor: org.brandColor } }); state.org = r.org; toast('Saved.'); } catch (err) { toast(err.message, { kind: 'bad' }); } } }, 'Save') : null),
       h('section', { class: 'card stack' }, h('h3', 'Service configuration'),
         h('dl', { class: 'kv' },
-          h('dt', 'Interviewer and analysis model'), h('dd', cfg.llm.live ? `${cfg.llm.model} via ${cfg.llm.provider === 'bedrock' ? 'Amazon Bedrock' : 'the Claude API'}` : 'Offline developer mode (rule-based). Set a model key to evaluate the AI interviewer.'),
+          h('dt', 'Interviewer and analysis model'), h('dd', cfg.llm.live ? `${cfg.llm.model} via the OpenAI API` : 'Offline developer mode (rule-based). Add an OpenAI API key to use the AI interviewer.'),
           h('dt', 'Speech to text'), h('dd', cfg.voice.retention.stt),
           h('dt', 'Text to speech'), h('dd', cfg.voice.retention.tts),
           h('dt', 'Audio'), h('dd', 'Processed live and not stored by PartWays. Transcripts are kept as text.'),
