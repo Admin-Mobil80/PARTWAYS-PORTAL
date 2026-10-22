@@ -7,8 +7,8 @@
 export const realtimeSupported = () => typeof RTCPeerConnection === 'function' && !!navigator.mediaDevices?.getUserMedia;
 
 export class RealtimeConversation {
-  constructor({ keyUrl, headers, body = {}, onUserTurn, onAssistantDelta, onAssistantTurn, onSpeaking, onUserSpeaking, onError }) {
-    Object.assign(this, { keyUrl, headers, body, onUserTurn, onAssistantDelta, onAssistantTurn, onSpeaking, onUserSpeaking, onError });
+  constructor({ keyUrl, headers, body = {}, onUserTurn, onAssistantDelta, onAssistantTurn, onSpeaking, onUserSpeaking, onLevel, onError }) {
+    Object.assign(this, { keyUrl, headers, body, onUserTurn, onAssistantDelta, onAssistantTurn, onSpeaking, onUserSpeaking, onLevel, onError });
     this.pc = null; this.dc = null; this.stream = null; this.audio = null; this.closed = false;
     // When each turn started, so turns can be stored in the order they were spoken.
     this.startedAt = new Map();
@@ -26,6 +26,7 @@ export class RealtimeConversation {
     this.audio.autoplay = true;
     pc.ontrack = (e) => { this.audio.srcObject = e.streams[0]; };
     pc.addTrack(this.stream.getAudioTracks()[0], this.stream);
+    this.watchLevel();
     pc.onconnectionstatechange = () => {
       if (!this.closed && ['failed', 'disconnected'].includes(pc.connectionState)) this.onError?.('connection');
     };
@@ -86,6 +87,27 @@ export class RealtimeConversation {
     }
   }
 
+  // How loud the employee's microphone is (0 to 1), a few times a second, so the
+  // page can show that it is being heard. A timer, not an animation frame, so it
+  // keeps running when the browser deprioritises the tab.
+  watchLevel() {
+    if (!this.onLevel) return;
+    try {
+      this.levelCtx = new AudioContext();
+      const analyser = this.levelCtx.createAnalyser();
+      analyser.fftSize = 512;
+      this.levelCtx.createMediaStreamSource(this.stream).connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+      this.levelTimer = setInterval(() => {
+        analyser.getFloatTimeDomainData(buf);
+        let sum = 0;
+        for (const v of buf) sum += v * v;
+        const muted = !this.stream?.getAudioTracks()[0]?.enabled;
+        this.onLevel(muted ? 0 : Math.min(1, Math.sqrt(sum / buf.length) * 6));
+      }, 80);
+    } catch { /* no level meter; the conversation still works */ }
+  }
+
   send(event) {
     if (this.dc?.readyState === 'open') this.dc.send(JSON.stringify(event));
   }
@@ -102,6 +124,8 @@ export class RealtimeConversation {
 
   stop() {
     this.closed = true;
+    clearInterval(this.levelTimer);
+    try { this.levelCtx?.close(); } catch { /* already closed */ }
     try { this.dc?.close(); } catch { /* already closed */ }
     try { this.pc?.close(); } catch { /* already closed */ }
     for (const t of this.stream?.getTracks() || []) t.stop();

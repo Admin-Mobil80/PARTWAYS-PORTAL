@@ -261,6 +261,12 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   const statusEl = h('div', { class: 'status', role: 'status', 'aria-live': 'polite' });
   const qEl = h('div', { class: 'current-q', 'aria-live': 'polite' });
   const liveEl = h('div', { class: 'live-you' });
+  // Shows what is happening in a voice conversation: a sound meter while the employee
+  // is heard, "Thinking…" until the reply starts, moving bars while the interviewer talks.
+  const actBars = h('span', { class: 'bars', 'aria-hidden': 'true' }, [0, 1, 2, 3, 4].map(() => h('span')));
+  const actLabel = h('span', { class: 'label' });
+  const actEl = h('div', { class: 'activity', 'data-state': 'idle' }, actBars, actLabel);
+  const ACT_LABEL = { listening: 'actListening', thinking: 'actThinking' };
   const topicsEl = h('div', { class: 'topics', 'aria-label': t('topicsHeading') });
   // Topics fold into one line so the question stays at the top of the screen.
   const topicsSummary = h('summary');
@@ -274,6 +280,9 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
   const labels = { listening: 'stListening', speaking: 'stSpeaking', thinking: 'stThinking', paused: 'stPaused', muted: 'stMuted', reconnecting: 'stReconnecting', finished: 'stFinished', your_turn: 'stYourTurn' };
   function setState(x) {
     st.state = x;
+    actEl.dataset.state = x;
+    actLabel.textContent = ACT_LABEL[x] ? t(ACT_LABEL[x]) : '';
+    if (x !== 'listening') actEl.style.setProperty('--lvl', 0);
     statusEl.dataset.state = x;
     statusEl.replaceChildren(h('span', { class: 'light', 'aria-hidden': 'true' }), t(labels[x]));
     renderControls();
@@ -419,15 +428,20 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     let reply = '';
     rt = new RealtimeConversation({
       keyUrl: `/api/session/${s.id}/realtime`, headers, body: { voice: voiceSel?.voice, style: voiceSel?.style },
-      onAssistantDelta: (d) => { reply += d; qEl.textContent = reply; keepInView(); },
+      onAssistantDelta: (d) => { if (!reply) liveEl.textContent = ''; reply += d; qEl.textContent = reply; keepInView(); },
       onAssistantTurn: (text, at) => { reply = ''; qEl.textContent = text; saveLiveTurn('interviewer', text, at); },
-      onUserTurn: (text, at) => { liveEl.textContent = ''; saveLiveTurn('employee', text, at); },
+      // The employee's words, shown as soon as they are transcribed, confirm they were understood.
+      onUserTurn: (text, at) => { if (!reply) liveEl.textContent = text; saveLiveTurn('employee', text, at); },
       onSpeaking: (on) => {
         rtSpeaking = on;
         if (st.ended) { if (!on) setState('finished'); return; }
         setState(on ? 'speaking' : st.muted ? 'muted' : 'listening');
       },
-      onUserSpeaking: (on) => { if (on && !st.ended && !st.muted) setState('listening'); },
+      onUserSpeaking: (on) => {
+        if (st.ended || st.muted) return;
+        if (on) { liveEl.textContent = ''; setState('listening'); } else if (!rtSpeaking) setState('thinking');
+      },
+      onLevel: (lvl) => { if (st.state === 'listening') actEl.style.setProperty('--lvl', lvl.toFixed(2)); },
       onError: () => liveFailed(),
     });
     try { await rt.start(); } catch (err) { liveFailed(err); }
@@ -560,7 +574,7 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
     !config.llm.live ? h('div', { class: 'notice warn', style: { marginTop: '.5rem' } }, t('offline')) : null,
     h('div', { class: `convo ${st.voice ? 'voice' : 'text'}` },
       h('div', { class: 'convo-head' }, statusEl, topicsBox),
-      h('div', { class: 'stage' }, st.voice ? qEl : null, st.voice ? liveEl : null, noticeEl, transcriptPanel),
+      h('div', { class: 'stage' }, st.voice ? qEl : null, st.voice ? actEl : null, st.voice ? liveEl : null, noticeEl, transcriptPanel),
       controls),
   );
   renderTopics(ctx.session.topics);
@@ -681,6 +695,8 @@ function reviewScreen() {
         await api(`/api/session/${s.id}/discard`, { method: 'POST', headers });
         return render(h('div', { class: 'hero' }, h('h1', t('withdrawn'))));
       }
+      // A preview shows the whole flow, but nothing is ever submitted.
+      if (kind === 'submit' && s.preview) { dirty = false; return previewDoneScreen(); }
       if (kind === 'cancelCorrection') { await api(`/api/session/${s.id}/cancel-correction`, { method: 'POST', headers }); await loadSession(s.id); return submittedScreen(); }
       await api(`/api/session/${s.id}/submit`, { method: 'POST', body, headers });
       dirty = false;
@@ -701,10 +717,21 @@ function reviewScreen() {
     h('div', { class: 'sticky-actions' }, saveState, h('span', { class: 'spacer' }),
       correcting ? h('button', { class: 'btn', onclick: () => act('cancelCorrection') }, t('cancelCorrection')) : h('button', { class: 'btn ghost', onclick: () => act('discard') }, t('discard')),
       !correcting && !s.preview ? h('button', { class: 'btn', onclick: () => act('later') }, t('saveLater')) : null,
-      !s.preview ? h('button', { class: 'btn primary', onclick: () => act('submit') }, correcting ? t('resubmit') : t('submit')) : null),
+      s.preview ? h('span', { class: 'small muted' }, t('previewSubmitNote')) : null,
+      h('button', { class: 'btn primary', onclick: () => act('submit') }, correcting ? t('resubmit') : t('submit'))),
   );
   renderPoints();
   renderFactors();
+}
+
+// --- Preview finished ---------------------------------------------------------------
+
+function previewDoneScreen() {
+  render(
+    h('div', { class: 'hero' }, h('h1', t('previewDoneTitle')),
+      h('p', { class: 'ink2' }, t('previewDoneBody', { org: ctx.programme.org.name }))),
+    h('div', { class: 'row' }, h('a', { class: 'btn primary', href: '/hr/#/' }, t('backToWorkspace'))),
+  );
 }
 
 // --- Submitted -----------------------------------------------------------------
