@@ -14,7 +14,8 @@ const ROUTES = [
   [/^\/programmes\/([^/]+)(?:\/(overview|guide|participants|settings))?$/, () => import('./programme.js'), 'programmes'],
   [/^\/insights$/, () => import('./insights.js'), 'insights'],
   [/^\/insights\/theme\/([^/]+)$/, () => import('./insights.js').then((m) => ({ render: m.renderTheme })), 'insights'],
-  [/^\/assistant$/, () => import('./assistant.js'), 'assistant'],
+  // The assistant is the Ask tab of Insights; old links still work.
+  [/^\/assistant$/, () => import('./insights.js').then((m) => ({ render: (el) => m.render(el, [], { tab: 'ask' }) })), 'insights'],
   [/^\/reports$/, () => import('./reports.js'), 'reports'],
   [/^\/reports\/([^/]+)$/, () => import('./reports.js').then((m) => ({ render: m.renderReport })), 'reports'],
   [/^\/settings$/, () => import('./settings.js'), 'settings'],
@@ -26,7 +27,6 @@ const NAV = [
   ['home', '#/', 'Home', null],
   ['programmes', '#/programmes', 'Programmes', 'programmes'],
   ['insights', '#/insights', 'Insights', 'insights'],
-  ['assistant', '#/assistant', 'Insight assistant', 'assistant'],
   ['reports', '#/reports', 'Reports', 'reports'],
   ['team', '#/team', 'Team', 'team'],
   ['billing', '#/billing', 'Credits and billing', 'billing'],

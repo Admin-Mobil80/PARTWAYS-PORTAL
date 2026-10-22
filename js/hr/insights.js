@@ -186,10 +186,13 @@ export async function render(el, params, query = {}) {
   const q = getQuery();
   if (query.programmeId) { q.programmeId = query.programmeId; setQuery(q); }
   let tab = query.tab || store.get('pw.hr.instab', 'overview');
+  if (tab === 'ask' && !can('assistant')) tab = 'overview';
+  // Set once the findings have loaded; the header's "Ask a question" uses it.
+  let showTab = () => {};
   const head = pageHead('Insights', 'What departing employees confirmed after reviewing their own summaries.',
     h('button', { class: 'btn sm', onclick: () => download('/api/hr/insights/export', 'partways-findings.csv', { method: 'POST', body: { query: getQuery() } }).catch((e) => toast(e.message, { kind: 'bad' })) }, 'Export CSV'),
     can('reports') ? h('button', { class: 'btn sm', onclick: () => newReportDialog(getQuery()) }, 'Create report') : null,
-    can('assistant') ? h('a', { class: 'btn sm primary', href: '#/assistant' }, 'Ask a question') : null);
+    can('assistant') ? h('button', { class: 'btn sm primary', type: 'button', onclick: () => showTab('ask') }, 'Ask a question') : null);
   const filtersBox = h('div');
   const body = h('div');
   mount(el, head, filtersBox, body);
@@ -199,12 +202,13 @@ export async function render(el, params, query = {}) {
     let ins;
     try { ins = await hr('/api/hr/insights', { method: 'POST', body: { query: cur } }); } catch (err) { body.replaceChildren(errorBox(err, load)); return; }
     filtersBox.replaceChildren(filterBar(cur, ins, () => { setQuery(cur); load(); }));
-    const tabs = [['overview', 'Overview'], ['themes', 'Themes'], ['segments', 'Segments'], ['objectives', 'Objectives'], ['participation', 'Participation']];
+    const tabs = [['overview', 'Overview'], ['themes', 'Themes'], ['segments', 'Segments'], ['objectives', 'Objectives'], ['participation', 'Participation'],
+      ...(can('assistant') ? [['ask', 'Ask a question']] : [])];
     const content = h('div');
-    const draw = () => {
+    const draw = async () => {
       store.set('pw.hr.instab', tab);
       tabBar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.k === tab)));
-      if (!ins.current.available && tab !== 'participation') {
+      if (!ins.current.available && tab !== 'participation' && tab !== 'ask') {
         content.replaceChildren(h('div', { class: 'unavailable', role: 'status' }, h('strong', 'Not enough responses to show findings.'), h('p', { style: { margin: '.3rem 0 0' } }, `This selection has ${ins.current.n} submitted response${ins.current.n === 1 ? '' : 's'}. Findings are shown from ${ins.current.minimum} responses, so that no one can be identified. Try a longer period, fewer filters, or a different programme. Participation figures are still available.`)));
         return;
       }
@@ -212,10 +216,16 @@ export async function render(el, params, query = {}) {
       else if (tab === 'themes') content.replaceChildren(themesTable(ins));
       else if (tab === 'segments') content.replaceChildren(segmentsView(ins));
       else if (tab === 'objectives') content.replaceChildren(objectivesView(ins));
+      else if (tab === 'ask') {
+        // The assistant answers from the selection set in the filter bar above.
+        const { assistantPanel } = await import('./assistant.js');
+        if (tab === 'ask') content.replaceChildren(await assistantPanel(ins, cur));
+      }
       else content.replaceChildren(participationView(ins));
     };
     const tabBar = h('div', { class: 'tabs', role: 'tablist' }, tabs.map(([k, l]) => h('button', { role: 'tab', 'data-k': k, type: 'button', onclick: () => { tab = k; draw(); } }, l)));
     body.replaceChildren(h('div', { class: 'stack', style: { gap: '.75rem' } }, scopeLine(ins), tabBar, content));
+    showTab = (k) => { tab = k; draw(); };
     draw();
   };
   load();
@@ -266,7 +276,7 @@ export async function renderTheme(el, [themeId]) {
 }
 
 async function bookmark(t, q) {
-  try { await hr('/api/hr/bookmarks', { method: 'POST', body: { kind: 'theme', ref: t.id, title: t.label, query: q } }); toast('Bookmarked. Find it on the Insight assistant page.'); } catch (err) { toast(err.message, { kind: 'bad' }); }
+  try { await hr('/api/hr/bookmarks', { method: 'POST', body: { kind: 'theme', ref: t.id, title: t.label, query: q } }); toast('Bookmarked. Find it under Insights → Ask a question.'); } catch (err) { toast(err.message, { kind: 'bad' }); }
 }
 
 function taxonomyCard(t, q) {

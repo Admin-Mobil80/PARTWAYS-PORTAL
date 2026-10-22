@@ -1,11 +1,11 @@
-// Insight assistant: questions answered from the same governed numbers as the dashboard,
+// Insight assistant (the Ask tab of Insights): questions answered from the same governed numbers as the dashboard,
 // with evidence links, clearly separated interpretation, and stated gaps.
-import { h, mount, toast, dialog } from '../lib.js';
-import { hr, can, go, pageHead, loading } from './core.js';
-import { setCrumbs } from './app.js';
-import { getQuery, setQuery, scopeLine } from './insights.js';
+import { h, toast, dialog } from '../lib.js';
+import { hr, can } from './core.js';
+import { setQuery } from './insights.js';
 import { table } from './charts.js';
 
+// The conversation is kept while moving between Insights tabs.
 let history = [];
 
 function refLinks(refs = []) {
@@ -55,11 +55,9 @@ function answerCard(a) {
       h('button', { class: 'btn ghost sm', onclick: async () => { try { await navigator.clipboard.writeText(`${a.question}\n\n${answerText(a)}\n\n(${a.scope})`); toast('Copied.'); } catch { toast('Copy is not available in this browser.', { kind: 'bad' }); } } }, 'Copy')));
 }
 
-export async function render(el) {
-  setCrumbs('Insight assistant');
-  const q = getQuery();
-  mount(el, loading());
-  const ins = await hr('/api/hr/insights', { method: 'POST', body: { query: q } });
+// The assistant, shown as the "Ask a question" tab of Insights. It answers from the
+// selection set in the Insights filter bar (query), with the same numbers as the tabs.
+export async function assistantPanel(ins, q) {
   const thread = h('div', { class: 'stack', 'aria-live': 'polite' });
   const input = h('textarea', { rows: 2, id: 'ask', placeholder: 'For example: Why are people in Customer Service leaving?', onkeydown: (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } } });
   const sendBtn = h('button', { class: 'btn primary', type: 'button', onclick: () => send() }, 'Ask');
@@ -86,24 +84,23 @@ export async function render(el) {
   };
   let bookmarks = [];
   try { bookmarks = (await hr('/api/hr/bookmarks')).bookmarks; } catch { /* optional */ }
-  mount(el,
-    pageHead('Insight assistant', 'Ask about the findings in your own words. Answers use the same numbers as the dashboard, show their evidence, and say what the data cannot tell you.',
-      h('button', { class: 'btn sm ghost', onclick: () => { history = []; drawThread(); toast('Conversation cleared.'); } }, 'Clear conversation')),
-    h('div', { class: 'split' },
-      h('div', { class: 'stack' },
-        h('div', { class: 'card soft stack', style: { gap: '.4rem' } }, h('div', { class: 'small muted' }, 'Answering from this selection'), scopeLine(ins), h('a', { href: '#/insights', class: 'small' }, 'Change the selection in Insights')),
-        thread,
-        h('div', { class: 'card stack' }, h('label', { for: 'ask' }, 'Your question'), input, h('div', { class: 'row between' }, h('span', { class: 'small muted' }, 'Enter to send, Shift+Enter for a new line'), sendBtn))),
-      h('div', { class: 'stack sticky-side' },
-        h('section', { class: 'card stack' }, h('h3', 'Suggested questions'),
-          (ins.suggestions || []).map((s) => h('button', { class: 'btn sm', style: { justifyContent: 'flex-start', whiteSpace: 'normal', textAlign: 'left' }, onclick: () => send(s) }, s))),
-        h('section', { class: 'card stack' }, h('h3', 'What it will not do'),
-          h('ul', { class: 'small ink2', style: { margin: 0, paddingLeft: '1.1rem' } },
-            h('li', 'Identify or speculate about individuals, or show groups below the reporting minimum.'),
-            h('li', 'Claim causes. Patterns are described as what respondents said.'),
-            h('li', 'Use anything employees did not submit, or answers outside the selected data.'))),
-        bookmarks.length ? h('section', { class: 'card stack' }, h('h3', 'Bookmarks'),
-          h('ul', { class: 'list-plain small' }, bookmarks.map((b) => h('li', { class: 'row between' }, h('a', { href: `#/insights/theme/${b.ref}`, onclick: () => { if (b.query) setQuery(b.query); } }, b.title),
-            h('button', { class: 'btn ghost sm', 'aria-label': `Remove bookmark ${b.title}`, onclick: async (e) => { await hr(`/api/hr/bookmarks/${b.id}`, { method: 'DELETE' }); e.target.closest('li').remove(); } }, '✕'))))) : null)));
   drawThread();
+  return h('div', { class: 'split' },
+    h('div', { class: 'stack' },
+      h('p', { class: 'small ink2', style: { margin: 0 } }, 'Ask about these findings in your own words. Answers use the selection above and the same numbers as the other tabs, show their evidence, and say what the data cannot tell you.'),
+      thread,
+      h('div', { class: 'card stack' }, h('label', { for: 'ask' }, 'Your question'), input,
+        h('div', { class: 'row between' }, h('span', { class: 'small muted' }, 'Enter to send, Shift+Enter for a new line'),
+          h('div', { class: 'row' }, history.length ? h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { history = []; drawThread(); toast('Conversation cleared.'); } }, 'Clear') : null, sendBtn)))),
+    h('div', { class: 'stack sticky-side' },
+      h('section', { class: 'card stack' }, h('h3', 'Suggested questions'),
+        (ins.suggestions || []).map((s) => h('button', { class: 'btn sm', style: { justifyContent: 'flex-start', whiteSpace: 'normal', textAlign: 'left' }, onclick: () => send(s) }, s))),
+      h('section', { class: 'card stack' }, h('h3', 'What it will not do'),
+        h('ul', { class: 'small ink2', style: { margin: 0, paddingLeft: '1.1rem' } },
+          h('li', 'Identify or speculate about individuals, or show groups below the reporting minimum.'),
+          h('li', 'Claim causes. Patterns are described as what respondents said.'),
+          h('li', 'Use anything employees did not submit, or answers outside the selected data.'))),
+      bookmarks.length ? h('section', { class: 'card stack' }, h('h3', 'Bookmarks'),
+        h('ul', { class: 'list-plain small' }, bookmarks.map((b) => h('li', { class: 'row between' }, h('a', { href: `#/insights/theme/${b.ref}`, onclick: () => { if (b.query) setQuery(b.query); } }, b.title),
+          h('button', { class: 'btn ghost sm', 'aria-label': `Remove bookmark ${b.title}`, onclick: async (e) => { await hr(`/api/hr/bookmarks/${b.id}`, { method: 'DELETE' }); e.target.closest('li').remove(); } }, '✕'))))) : null));
 }
