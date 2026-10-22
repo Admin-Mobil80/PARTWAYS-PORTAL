@@ -556,12 +556,14 @@ function conversationScreen({ voice, resume = false, voiceSel = null }) {
       if (!ok) return;
     }
     cleanupAll();
-    render(h('div', { class: 'hero', role: 'status' }, h('p', h('span', { class: 'spinner' }), ' ', t('preparing'))));
+    const progress = preparingScreen();
     try {
       await api(`/api/session/${s.id}/finish`, { method: 'POST', body: { activeMs: st.activeMs }, headers });
       await loadSession(s.id);
+      await progress.done();
       reviewScreen();
     } catch (err) {
+      progress.stop();
       render(h('div', { class: 'hero' }, h('p', { class: 'notice bad' }, err.message), h('div', { class: 'row' },
         h('button', { class: 'btn primary', onclick: finish }, t('retry')),
         h('button', { class: 'btn', onclick: () => conversationScreen({ voice: false, resume: true }) }, t('back')))));
@@ -724,6 +726,32 @@ function reviewScreen() {
   renderFactors();
 }
 
+// --- Preparing the summary --------------------------------------------------------------
+// The summary takes about 10–15 seconds. A progress bar fills on a curve that slows
+// as it nears the end (it never claims to be finished early), with a step message
+// that changes as time passes; it completes when the summary is ready.
+
+function preparingScreen() {
+  const bar = h('span');
+  const meter = h('div', { class: 'meter progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-label': t('preparing') }, bar);
+  const step = h('p', { class: 'ink2', 'aria-live': 'polite' }, t('prepStep1'));
+  render(h('div', { class: 'hero preparing', role: 'status' }, h('h1', t('preparing')), meter, step, h('p', { class: 'small muted' }, t('prepWait'))));
+  const steps = [[0, 'prepStep1'], [3, 'prepStep2'], [7, 'prepStep3'], [11, 'prepStep4']];
+  const started = Date.now();
+  const set = (pct) => { bar.style.width = `${pct}%`; meter.setAttribute('aria-valuenow', String(Math.round(pct))); };
+  const timer = setInterval(() => {
+    const sec = (Date.now() - started) / 1000;
+    set(Math.min(95, 100 * (1 - Math.exp(-sec / 6))));
+    const key = steps.filter(([at]) => sec >= at).at(-1)[1];
+    if (step.dataset.key !== key) { step.dataset.key = key; step.textContent = t(key); }
+  }, 200);
+  return {
+    stop: () => clearInterval(timer),
+    // Fill to the end before moving on, so the last step is visible.
+    done: () => { clearInterval(timer); set(100); step.textContent = t('prepReady'); return new Promise((r) => setTimeout(r, 450)); },
+  };
+}
+
 // --- Preview finished ---------------------------------------------------------------
 
 function previewDoneScreen() {
@@ -762,14 +790,8 @@ function submittedScreen() {
       h('div', { class: 'row no-print' },
         h('button', { class: 'btn sm', onclick: () => { const a = h('a', { href: URL.createObjectURL(new Blob([copyText()], { type: 'text/plain' })), download: 'partways-summary.txt' }); a.click(); } }, t('download')),
         h('button', { class: 'btn sm', onclick: () => window.print() }, t('print')))),
+    // Submitting is final: the employee reviewed and corrected the summary in the step before.
     h('section', { class: 'card stack no-print', style: { marginTop: '1rem' } }, h('h3', t('rateTitle')), h('p', { class: 'muted small' }, tv('rateHint')), ['ease', 'heard', 'accuracy'].map(rateRow)),
-    h('div', { class: 'row no-print', style: { marginTop: '1.5rem' } },
-      h('button', { class: 'btn', onclick: async () => { const r = await api(`/api/session/${s.id}/start-correction`, { method: 'POST', headers }); ctx.session = r.session; reviewScreen(); } }, t('correctSubmitted')),
-      h('button', { class: 'btn danger', onclick: async () => {
-        if (!(await confirmDialog(t('withdraw'), t('withdrawConfirm'), { confirmLabel: t('withdraw'), kind: 'danger' }))) return;
-        await api(`/api/session/${s.id}/withdraw`, { method: 'POST', headers });
-        render(h('div', { class: 'hero' }, h('h1', t('withdrawn'))));
-      } }, t('withdraw'))),
   );
 }
 

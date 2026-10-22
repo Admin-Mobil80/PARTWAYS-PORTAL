@@ -18,6 +18,8 @@ body { background: var(--surface); }
 .choice strong { font-size: 1.02rem; }
 .meter { height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; }
 .meter > span { display: block; height: 100%; background: var(--series-1); width: 0; transition: width .08s; }
+.meter.progress { height: 12px; margin: 1.25rem 0 .75rem; max-width: 480px; }
+.meter.progress > span { background: var(--accent); transition: width .35s ease-out; }
 
 /* Conversation */
 .convo { display: grid; grid-template-rows: auto 1fr auto; min-height: calc(100dvh - 120px); gap: .75rem; padding-top: .5rem; }
