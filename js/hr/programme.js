@@ -9,21 +9,32 @@ const TIER_LABEL = { quick: 'All lengths', standard: 'Standard and in depth', in
 
 export async function renderNew(el) {
   setCrumbs(['Programmes', '#/programmes'], 'New programme');
-  const name = h('input', { type: 'text', id: 'pn', required: true, placeholder: 'For example: Warehouse exits 2027' });
-  let template = 'general', dup = '';
-  const tpl = h('div', { class: 'stack', role: 'radiogroup', 'aria-label': 'Starting template' }, Object.entries(state.meta.templates).map(([k, v]) => h('label', { class: 'check card flat', style: { padding: '.6rem .8rem' } },
-    h('input', { type: 'radio', name: 'tpl', value: k, checked: k === template, onchange: () => { template = k; } }), h('span', h('strong', v.label), h('br'), h('span', { class: 'small muted' }, v.framing)))));
-  const dupSel = h('select', { id: 'dup', onchange: (e) => { dup = e.target.value; tpl.hidden = !!dup; } }, h('option', { value: '' }, 'Start from a template'), state.programmes.map((p) => h('option', { value: p.id }, `Duplicate “${p.name}”`)));
-  mount(el, pageHead('New programme', 'Start with a template or copy an existing programme. You will set out what you want to learn next, and PartWays proposes the interview plan.'),
+  const templates = state.meta.templates;
+  let template = 'general';
+  // The name follows the chosen template until the user types their own.
+  let named = false;
+  const name = h('input', { type: 'text', id: 'pn', required: true, value: templates[template].label, oninput: () => { named = true; } });
+  const framing = h('textarea', { id: 'pf', rows: 3, placeholder: 'For example: Nurses leaving our hospitals in their first two years. Focus on shift patterns, staffing levels and support from senior staff.' });
+  const custom = h('div', { class: 'field', hidden: true }, h('label', { for: 'pf' }, 'Who is leaving, and what should the interview focus on?'),
+    h('span', { class: 'hint' }, 'The interviewer uses this as background for every conversation. You set out the objectives and questions next.'), framing);
+  const tpl = h('div', { class: 'stack', role: 'radiogroup', 'aria-label': 'Template' }, Object.entries(templates).map(([k, v]) => h('label', { class: 'check card flat', style: { padding: '.6rem .8rem' } },
+    h('input', { type: 'radio', name: 'tpl', value: k, checked: k === template, onchange: () => {
+      template = k;
+      if (!named) name.value = v.label;
+      custom.hidden = k !== 'custom';
+      if (k === 'custom') framing.focus();
+    } }), h('span', h('strong', v.label), h('br'), h('span', { class: 'small muted' }, v.about || v.framing)))));
+  mount(el, pageHead('New programme', 'Choose a template. You will set out what you want to learn next, and PartWays proposes the interview plan.'),
     h('form', { class: 'card stack', style: { maxWidth: '720px' }, onsubmit: async (e) => {
       e.preventDefault();
+      if (template === 'custom' && !framing.value.trim()) { framing.focus(); return toast('Describe who is leaving and what the interview should focus on.', { kind: 'bad' }); }
       try {
-        const r = await hr('/api/hr/programmes', { method: 'POST', body: { name: name.value, template, duplicateOf: dup || undefined } });
+        const r = await hr('/api/hr/programmes', { method: 'POST', body: { name: name.value, template, framing: template === 'custom' ? framing.value : undefined } });
         await refreshProgrammes();
         go(`#/programmes/${r.programme.id}/guide`);
       } catch (err) { toast(err.message, { kind: 'bad' }); }
     } }, h('div', { class: 'field' }, h('label', { for: 'pn' }, 'Programme name'), name),
-    h('div', { class: 'field' }, h('label', { for: 'dup' }, 'Starting point'), dupSel), tpl,
+    h('div', { class: 'field' }, h('label', 'Template'), tpl), custom,
     h('div', h('button', { class: 'btn primary', type: 'submit' }, 'Create draft programme'))));
 }
 
@@ -330,7 +341,7 @@ function settings(el, p) {
   mount(el, h('form', { class: 'stack', style: { maxWidth: '860px', gap: '1.25rem' }, onsubmit: async (e) => {
     e.preventDefault();
     try {
-      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reportingMode: f.reportingMode, reportingMinimum: f.reportingMinimum, reminder: f.reminder, messages: f.messages } });
+      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, framing: p.template === 'custom' ? f.framing : undefined, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reportingMode: f.reportingMode, reportingMinimum: f.reportingMinimum, reminder: f.reminder, messages: f.messages } });
       await refreshProgrammes();
       toast('Settings saved.');
     } catch (err) { toast(err.message, { kind: 'bad' }); }
@@ -338,6 +349,7 @@ function settings(el, p) {
   h('section', { class: 'card' }, h('h3', 'About'),
     h('div', { class: 'field' }, h('label', 'Name'), h('input', { type: 'text', value: f.name, oninput: (e) => { f.name = e.target.value; } })),
     ta('Description (internal)', 'description', null, 2),
+    p.template === 'custom' ? ta('Who is leaving, and what the interview should focus on', 'framing', 'The interviewer uses this as background for every conversation.') : null,
     ta('Invitation page introduction', 'intro', 'Shown to employees on the invitation page.'),
     ta('How feedback is used', 'feedbackNotice', 'Plain-language notice shown before the interview.'),
     ta('Completion message', 'completionMessage', null, 2),),
