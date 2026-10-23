@@ -8,8 +8,7 @@ try { speechSynthesis.cancel(); } catch { /* unsupported */ }
 watchForUpdates();
 
 const ROUTES = [
-  [/^\/$/, () => import('./home.js'), 'home'],
-  [/^\/programmes$/, () => import('./home.js').then((m) => ({ render: m.renderPortfolio })), 'programmes'],
+  [/^\/(?:programmes)?$/, () => import('./home.js'), 'programmes'],
   [/^\/programmes\/new$/, () => import('./programme.js').then((m) => ({ render: m.renderNew })), 'programmes'],
   [/^\/programmes\/([^/]+)(?:\/(overview|guide|participants|settings))?$/, () => import('./programme.js'), 'programmes'],
   [/^\/insights$/, () => import('./insights.js'), 'insights'],
@@ -24,7 +23,6 @@ const ROUTES = [
 ];
 
 const NAV = [
-  ['home', '#/', 'Home', null],
   ['programmes', '#/programmes', 'Programmes', 'programmes'],
   ['insights', '#/insights', 'Insights', 'insights'],
   ['reports', '#/reports', 'Reports', 'reports'],
@@ -180,7 +178,7 @@ async function route() {
   const { path, query } = parseHash();
   side?.classList.remove('open');
   const hit = ROUTES.find(([re]) => re.test(path));
-  if (!hit) { mount(main, h('div', { class: 'empty' }, h('h3', 'Page not found'), h('a', { href: '#/' }, 'Go to home'))); return; }
+  if (!hit) { mount(main, h('div', { class: 'empty' }, h('h3', 'Page not found'), h('a', { href: '#/' }, 'Go to programmes'))); return; }
   const [re, load, nav] = hit;
   for (const a of side.querySelectorAll('[data-nav]')) {
     if (a.dataset.nav === nav) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');

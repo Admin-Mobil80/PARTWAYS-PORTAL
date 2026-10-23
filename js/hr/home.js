@@ -1,4 +1,5 @@
-// Home: guided entry points, items needing attention, and the programme portfolio.
+// Programmes: the workspace's starting page, with getting-started steps, items needing
+// attention and the programme portfolio.
 import { h, mount, fmt, toast, dialog } from '../lib.js';
 import { state, hr, can, go, pageHead, PROG_STATUS, refreshProgrammes, loading, errorBox, plural } from './core.js';
 import { setCrumbs, showDemo } from './app.js';
@@ -77,13 +78,6 @@ function firstSteps() {
       step(4, 'Act on what you learn', 'See themes, ask the assistant and brief leaders. Findings stay de-identified.', btn('See an example', async () => showDemo()))));
 }
 
-function teamWelcome() {
-  return h('section', { class: 'card stack' }, h('h2', { style: { margin: 0 } }, 'Welcome'),
-    h('p', { class: 'ink2', style: { margin: 0 } }, `You have ${({ analyst: 'analyst', leader: 'leader' })[state.me?.role] || 'team'} access to ${state.org.name}. Findings appear here once departing employees have submitted their reviewed feedback.`),
-    h('div', { class: 'row' }, can('insights') ? h('a', { class: 'btn sm', href: '#/insights' }, 'Insights') : null, can('reports') ? h('a', { class: 'btn sm', href: '#/reports' }, 'Reports') : null,
-      h('button', { class: 'btn sm', type: 'button', onclick: () => showDemo() }, 'See an example in the demo')));
-}
-
 function guided() {
   const entry = (title, text, label, onClick, show = true) => (show ? h('div', { class: 'card stack', style: { alignContent: 'start' } }, h('h3', title), h('p', { class: 'ink2 small', style: { margin: 0 } }, text),
     h('div', h('button', { class: 'btn sm', type: 'button', onclick: async (e) => { const btn = e.currentTarget; btn.disabled = true; try { await onClick(); } catch (err) { toast(err.message, { kind: 'bad' }); } finally { btn.disabled = false; } } }, label))) : null);
@@ -96,21 +90,16 @@ function guided() {
       entry('From objective to finding', 'Follow the hybrid-working objective from the guide, through a live preview, to what respondents said.', 'Follow an objective', () => go('#/programmes/prog_general/guide?highlight=o_hybrid'), can('edit'))));
 }
 
-async function attention() {
-  const box = h('section', { class: 'card', 'aria-labelledby': 'a-h' }, h('h2', { id: 'a-h' }, 'Needs attention'), h('p', { class: 'muted small' }, 'Loading…'));
-  (async () => {
-    const items = [];
-    try {
-      const credits = state.me?.credits;
-      if (credits && !credits.unlimited && credits.balance === 0) items.push(['You have no interview credits left. Buy credits to send more invitations.', '#/billing']);
-      for (const p of state.programmes.filter((x) => x.hasDraft && can('edit'))) items.push([`${p.name} has guide changes that are not active yet`, `#/programmes/${p.id}/guide`]);
-      for (const p of state.programmes.filter((x) => x.processing)) items.push([`${p.name}: ${p.processing} submitted interview(s) still processing`, `#/programmes/${p.id}`]);
-    } catch (err) { items.push([err.message, null]); }
-    box.replaceChildren(h('h2', { id: 'a-h' }, 'Needs attention'), items.length
-      ? h('ul', { class: 'list-plain' }, items.map(([t, href]) => h('li', href ? h('a', { href }, t) : t)))
-      : h('p', { class: 'muted', style: { margin: 0 } }, 'Nothing needs your attention right now.'));
-  })();
-  return box;
+// Only shown when something needs doing.
+function attention() {
+  const items = [];
+  const credits = state.me?.credits;
+  if (credits && !credits.unlimited && credits.balance === 0) items.push(['You have no interview credits left. Buy credits to send more invitations.', '#/billing']);
+  for (const p of state.programmes.filter((x) => x.hasDraft && can('edit'))) items.push([`${p.name} has guide changes that are not active yet`, `#/programmes/${p.id}/guide`]);
+  for (const p of state.programmes.filter((x) => x.processing)) items.push([`${p.name}: ${p.processing} submitted interview(s) still processing`, `#/programmes/${p.id}`]);
+  if (!items.length) return null;
+  return h('section', { class: 'notice warn', style: { flexDirection: 'column', gap: 0 }, 'aria-labelledby': 'a-h' }, h('strong', { id: 'a-h' }, 'Needs attention'),
+    h('ul', { class: 'list-plain', style: { margin: '.35rem 0 0' } }, items.map(([t, href]) => h('li', h('a', { href }, t)))));
 }
 
 export function programmeCards(list) {
@@ -124,30 +113,23 @@ export function programmeCards(list) {
       p.hasDraft ? h('span', { class: 'badge warn' }, 'Unpublished changes') : null))));
 }
 
+// The workspace's starting page: getting started, anything needing attention, and the programmes.
 export async function render(el) {
-  setCrumbs('Home');
-  mount(el, loading());
-  await refreshProgrammes();
-  mount(el,
-    pageHead(`${state.org.shortName || state.org.name} exit interviews`, 'PartWays runs independent exit interviews for you, and turns what departing employees confirm into findings you can act on.'),
-    h('div', { class: 'stack', style: { gap: '1.5rem' } },
-      state.org.demo ? guided() : can('edit') ? firstSteps() : teamWelcome(),
-      await attention(),
-      can('programmes') ? h('section', { class: 'stack', 'aria-labelledby': 'p-h' },
-        h('div', { class: 'row between' }, h('h2', { id: 'p-h', style: { margin: 0 } }, 'Programmes'),
-          can('edit') ? h('a', { class: 'btn sm', href: '#/programmes/new' }, 'New programme') : null),
-        programmeCards(state.programmes.filter((p) => p.status !== 'archived'))) : null));
-}
-
-export async function renderPortfolio(el) {
+  // Leaders do not manage programmes; their starting point is the findings.
+  if (!can('programmes')) return location.replace('#/insights');
   setCrumbs('Programmes');
   mount(el, loading());
-  try { await refreshProgrammes(); } catch (err) { return mount(el, errorBox(err, () => renderPortfolio(el))); }
+  try { await refreshProgrammes(); } catch (err) { return mount(el, errorBox(err, () => render(el))); }
+  // The steps stay until the first invitation has gone out.
+  const started = state.programmes.some((p) => p.counts.participants > 0);
   const groups = [['Active and paused', ['active', 'paused']], ['Drafts', ['draft']], ['Archived', ['archived']]];
   mount(el, pageHead('Programmes', 'Each programme has its own learning objectives, interview guide, participants and reporting rules.',
     can('edit') ? h('a', { class: 'btn primary', href: '#/programmes/new' }, 'New programme') : null),
-  h('div', { class: 'stack', style: { gap: '1.5rem' } }, groups.map(([label, sts]) => {
-    const list = state.programmes.filter((p) => sts.includes(p.status));
-    return list.length ? h('section', { class: 'stack' }, h('h2', label), programmeCards(list)) : null;
-  })));
+  h('div', { class: 'stack', style: { gap: '1.5rem' } },
+    attention(),
+    state.org.demo ? guided() : can('edit') && !started ? firstSteps() : null,
+    state.programmes.length ? groups.map(([label, sts]) => {
+      const list = state.programmes.filter((p) => sts.includes(p.status));
+      return list.length ? h('section', { class: 'stack' }, h('h2', label), programmeCards(list)) : null;
+    }) : programmeCards([])));
 }
