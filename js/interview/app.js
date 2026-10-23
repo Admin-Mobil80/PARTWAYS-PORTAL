@@ -20,7 +20,7 @@ function shell(...content) {
     prog?.org?.demo ? h('div', { class: 'demo-strip' }, t('demo')) : null,
     h('header', { class: 'topbar' },
       h('div', { class: 'who' },
-        h('span', { class: 'pw-mark' }, h('span', { class: 'dot', 'aria-hidden': 'true' }, 'P'), 'PartWays', h('span', { class: 'muted small', style: { fontWeight: 500 } }, ' · independent exit interviews')),
+        h('span', { class: 'pw-mark' }, h('span', { class: 'dot', 'aria-hidden': 'true' }, 'PW'), 'PartWays', h('span', { class: 'muted small', style: { fontWeight: 500 } }, ' · independent exit interviews')),
         prog ? h('span', { class: 'org-chip' }, h('span', { class: 'sw', 'aria-hidden': 'true' }), `${t('for')} ${prog.org.name}`) : null),
       h('div', { class: 'row', style: { gap: '.4rem' } },
         langs.length > 1 ? h('label', { class: 'sr-only', for: 'langsel' }, t('language')) : null,

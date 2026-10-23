@@ -193,7 +193,8 @@ dialog.wide { max-width: min(900px, calc(100vw - 32px)); }
 
 /* Brand header pieces */
 .pw-mark { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; letter-spacing: -.01em; color: var(--ink); text-decoration: none; }
-.pw-mark .dot { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: inline-grid; place-items: center; color: var(--accent-ink); font-size: .8rem; }
+/* The PartWays "PW" mark: the same SVG as the favicon, so they never differ. */
+.pw-mark .dot { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; background: url(/favicon.svg) center / contain no-repeat; color: transparent; font-size: 0; overflow: hidden; }
 .org-chip { display: inline-flex; align-items: center; gap: .45rem; font-size: .85rem; color: var(--ink-2); }
 .org-chip .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--brand); }
 

@@ -51,7 +51,7 @@ function loginScreen() {
     if (sel) sel.value = c;
   });
   const root = h('main', { id: 'main', class: 'login' });
-  const mark = () => h('a', { class: 'pw-mark', href: '/' }, h('span', { class: 'dot' }, 'P'), 'PartWays');
+  const mark = () => h('a', { class: 'pw-mark', href: '/' }, h('span', { class: 'dot', 'aria-hidden': 'true' }, 'PW'), 'PartWays');
   const switchMode = (m) => { mode = m; step = 'details'; history.replaceState(null, '', m === 'signup' ? '#/signup' : '#/'); render(); };
   const render = (msg, action) => {
     const errEl = msg ? h('div', { class: 'notice bad', role: 'alert' }, h('div', msg, action ? h('div', { style: { marginTop: '.4rem' } }, action) : null)) : null;
@@ -151,7 +151,7 @@ function buildShell() {
     Object.entries(ROLES).map(([k, v]) => h('option', { value: k, selected: k === state.role }, v.label)));
   const wsBtn = (ws, label) => h('button', { type: 'button', 'aria-pressed': String(state.workspace === ws), onclick: () => switchWorkspace(ws) }, label);
   side = h('aside', { class: 'side', 'aria-label': 'Workspace navigation' },
-    h('a', { class: 'pw-mark', href: '#/' }, h('span', { class: 'dot' }, 'P'), 'PartWays'),
+    h('a', { class: 'pw-mark', href: '#/' }, h('span', { class: 'dot', 'aria-hidden': 'true' }, 'PW'), 'PartWays'),
     h('div', { class: 'seg ws-switch', role: 'group', 'aria-label': 'Workspace' }, wsBtn('own', 'My workspace'), wsBtn('demo', 'Demo')),
     h('div', { class: 'org-chip' }, h('span', { class: 'sw', style: { background: state.org?.brandColor } }), state.org?.name || ''),
     h('nav', NAV.filter(([, , , need]) => !need || can(need)).map(([id, href, label]) => h('a', { href, 'data-nav': id }, label))),
