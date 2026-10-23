@@ -7,6 +7,15 @@ export function countryOptions() {
   return CODES.map((code) => [code, names.of(code) || code]).sort((a, b) => a[1].localeCompare(b[1]));
 }
 
+// The visitor's country from where they are (CloudFront's view of it), or '' if unknown.
+export async function locateCountry() {
+  try {
+    const res = await fetch('/api/public/country');
+    const { country } = res.ok ? await res.json() : {};
+    return CODES.includes(country) ? country : '';
+  } catch { return ''; }
+}
+
 // A sensible default from the browser's locale, for example en-GB → GB.
 export function guessCountry() {
   const m = String(navigator.language || '').match(/-([A-Z]{2})$/i);

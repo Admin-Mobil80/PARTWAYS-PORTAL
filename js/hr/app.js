@@ -1,6 +1,6 @@
 // PartWays HR workspace: sign-in, navigation shell and hash router.
 import { h, mount, api, toast, store, watchForUpdates } from '../lib.js';
-import { countryOptions, guessCountry } from '../countries.js';
+import { countryOptions, guessCountry, locateCountry } from '../countries.js';
 import { state, ROLES, can, effectiveRole, setRole, setWorkspace, signOut, hr, refreshMe, refreshProgrammes, refreshThemes, plural } from './core.js';
 
 // Silence an interviewer still talking from an interview page left in this tab.
@@ -43,6 +43,13 @@ function loginScreen() {
   let mode = location.hash.startsWith('#/signup') ? 'signup' : 'signin';
   let step = 'details', session = null;
   const f = { email: '', orgName: '', country: guessCountry() };
+  // Where the visitor is beats the browser's language; a choice they made beats both.
+  locateCountry().then((c) => {
+    if (!c || f.countryTouched) return;
+    f.country = c;
+    const sel = document.getElementById('f-country');
+    if (sel) sel.value = c;
+  });
   const root = h('main', { id: 'main', class: 'login' });
   const mark = () => h('a', { class: 'pw-mark', href: '/' }, h('span', { class: 'dot' }, 'P'), 'PartWays');
   const switchMode = (m) => { mode = m; step = 'details'; history.replaceState(null, '', m === 'signup' ? '#/signup' : '#/'); render(); };
@@ -52,7 +59,7 @@ function loginScreen() {
       const input = (k, label, type = 'text', attrs = {}) => h('div', { class: 'field' }, h('label', { for: `f-${k}` }, label),
         h('input', { type, id: `f-${k}`, value: f[k], required: true, oninput: (e) => { f[k] = e.target.value; }, ...attrs }));
       const country = h('div', { class: 'field' }, h('label', { for: 'f-country' }, 'Country'),
-        h('select', { id: 'f-country', required: true, onchange: (e) => { f.country = e.target.value; } }, h('option', { value: '' }, 'Choose…'),
+        h('select', { id: 'f-country', required: true, onchange: (e) => { f.country = e.target.value; f.countryTouched = true; } }, h('option', { value: '' }, 'Choose…'),
           countryOptions().map(([c, n]) => h('option', { value: c, selected: c === f.country }, n))));
       const fields = mode === 'signup'
         ? [input('orgName', 'Organisation name', 'text', { autocomplete: 'organization' }), country, input('email', 'Work email', 'email', { autocomplete: 'email' })]

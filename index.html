@@ -325,13 +325,17 @@
     </div>
   </footer>
   <script type="module">
-    import { countryOptions, guessCountry } from '/js/countries.js';
+    import { countryOptions, guessCountry, locateCountry } from '/js/countries.js';
     // Silence an interviewer still talking from an interview page left in this tab.
     try { speechSynthesis.cancel(); } catch { /* unsupported */ }
     const $ = (id) => document.getElementById(id);
     const sel = $('su-country');
     const guess = guessCountry();
     for (const [code, name] of countryOptions()) sel.add(new Option(name, code, false, code === guess));
+    // Where the visitor is beats the browser's language; a choice they made beats both.
+    let countryTouched = false;
+    sel.addEventListener('change', () => { countryTouched = true; });
+    locateCountry().then((c) => { if (c && !countryTouched) sel.value = c; });
     const post = async (path, body) => {
       const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
