@@ -771,14 +771,28 @@ function submittedScreen() {
   const copyText = () => [`PartWays – ${ctx.programme.org.name}`, `${t('submittedTitle')} ${fmt.date(s.submittedAt)}`, '',
     ...Object.keys(s.sections).flatMap((sec) => { const ps = kept.filter((p) => p.section === sec); return ps.length ? [t(`sections.${sec}`), ...ps.map((p) => `• ${p.text}`), ''] : []; }),
     s.summary?.finalComment ? `${t('finalComment')}\n${s.summary.finalComment}` : ''].join('\n');
-  const ratings = { ...(s.ratings || {}) };
+  // Ratings are optional and sent together, once, with the button.
+  const ratings = {};
+  const sent = Object.keys(s.ratings || {}).length > 0;
+  const rateBox = h('section', { class: 'card stack no-print', style: { marginTop: '1rem' } });
+  const thanks = () => rateBox.replaceChildren(h('h3', t('rateTitle')), h('p', { class: 'row', style: { gap: '.5rem', margin: 0 } }, icon('check'), t('thanksRating')));
+  const send = h('button', { class: 'btn primary', type: 'button', disabled: true, onclick: async () => {
+    send.disabled = true;
+    try {
+      await api(`/api/session/${s.id}/ratings`, { method: 'POST', body: ratings, headers });
+      s.ratings = { ...ratings };
+      thanks();
+    } catch (err) { send.disabled = false; toast(err.message, { kind: 'bad' }); }
+  } }, t('rateSend'));
   const rateRow = (k) => {
-    const btns = [1, 2, 3, 4, 5].map((n) => h('button', { type: 'button', 'aria-label': `${t(`rate.${k}`)}: ${n} / 5`, 'aria-pressed': String(ratings[k] === n), onclick: async (e) => {
+    const btns = [1, 2, 3, 4, 5].map((n) => h('button', { type: 'button', 'aria-label': `${t(`rate.${k}`)}: ${n} / 5`, 'aria-pressed': 'false', onclick: (e) => {
       ratings[k] = n; btns.forEach((b) => b.setAttribute('aria-pressed', String(b === e.currentTarget)));
-      await api(`/api/session/${s.id}/ratings`, { method: 'POST', body: { [k]: n }, headers }).catch(() => {});
+      send.disabled = false;
     } }, n));
     return h('div', { class: 'row between' }, h('span', t(`rate.${k}`)), h('div', { class: 'stars' }, btns));
   };
+  if (sent) thanks();
+  else rateBox.append(h('h3', t('rateTitle')), h('p', { class: 'muted small' }, tv('rateHint')), ...['ease', 'heard', 'accuracy'].map(rateRow), h('div', send));
   render(
     h('div', { class: 'hero' }, h('h1', t('submittedTitle')), h('p', { class: 'ink2' }, ctx.programme.completionMessage)),
     h('section', { class: 'card stack' }, h('h3', t('submittedWhat')),
@@ -791,7 +805,7 @@ function submittedScreen() {
         h('button', { class: 'btn sm', onclick: () => { const a = h('a', { href: URL.createObjectURL(new Blob([copyText()], { type: 'text/plain' })), download: 'partways-summary.txt' }); a.click(); } }, t('download')),
         h('button', { class: 'btn sm', onclick: () => window.print() }, t('print')))),
     // Submitting is final: the employee reviewed and corrected the summary in the step before.
-    h('section', { class: 'card stack no-print', style: { marginTop: '1rem' } }, h('h3', t('rateTitle')), h('p', { class: 'muted small' }, tv('rateHint')), ['ease', 'heard', 'accuracy'].map(rateRow)),
+    rateBox,
   );
 }
 
