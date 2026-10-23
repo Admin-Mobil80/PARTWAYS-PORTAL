@@ -51,6 +51,9 @@
     .strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--panel); padding: 1rem 0; }
     .strip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .6rem 2rem; justify-content: center; font-size: .9rem; color: var(--ink-2); font-weight: 550; }
     .strip li::before { content: "✓"; color: var(--good); margin-right: .45rem; }
+    .film { padding-bottom: 0; }
+    .film .video { position: relative; aspect-ratio: 16 / 9; max-width: 960px; margin: 1.5rem auto 0; border-radius: var(--radius); overflow: hidden; background: #000; box-shadow: var(--shadow); }
+    .film .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
     /* The four steps sit beside the WhatsApp example, so both columns fill the same height. */
     .steps4 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; counter-reset: s; list-style: none; padding: 0; margin: 1.5rem 0 0; }
@@ -129,7 +132,7 @@
           <h1>Find out why people really leave.</h1>
           <p class="sub">PartWays interviews departing employees for you, by voice or by text, on their own phone. They review their summary before anything is shared, every answer is de-identified, and you get findings you can act on.</p>
           <div class="row">
-            <a class="btn lg" href="#how">See how it works</a>
+            <a class="btn lg" href="#film">See how it works</a>
             <a class="btn lg ghost" href="#pricing">Pricing</a>
           </div>
           <p class="fine">Your workspace includes a full demo with sample data, and you can add your team once you are in.</p>
@@ -168,6 +171,14 @@
     </div>
 
     <div class="wrap">
+      <section id="film" class="film" aria-labelledby="film-h">
+        <p class="eyebrow">See it in a minute</p>
+        <h2 class="big" id="film-h">How PartWays turns goodbyes into findings you can act on.</h2>
+        <div class="video">
+          <iframe src="https://www.youtube-nocookie.com/embed/gRl8F-50pYQ?rel=0" title="PartWays: find out why people really leave" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+      </section>
+
       <section id="how" aria-labelledby="how-h">
         <p class="eyebrow">How it works</p>
         <h2 class="big" id="how-h">From an email or WhatsApp invitation to findings in your leadership briefing.</h2>
