@@ -4,6 +4,7 @@
 import { h, mount, fmt, toast, dialog, confirmDialog, debounce } from '../lib.js';
 import { state, hr, can, pageHead, STATUS_LABEL, MODE_LABEL, LANG_LABEL, loading, errorBox, refreshProgrammes } from './core.js';
 import { setCrumbs, updateCredits } from './app.js';
+import { countryOptions } from '../countries.js';
 
 const STATUS_KIND = { submitted: 'good', declined: '', expired: 'warn', cancelled: '', withdrawn: '', awaiting_review: 'accent', in_progress: 'info', abandoned: 'warn', invited: '', not_started: '' };
 const INV_LABEL = { prepared: 'Prepared, not sent', sent: 'Sent', opened: 'Opened', responded: 'Responded', cancelled: 'Cancelled', expired: 'Expired' };
@@ -124,6 +125,26 @@ async function sendDialog(p, kind, after) {
 
 const FIELDS = [['email', 'Email address', 'email'], ['mobile', 'Mobile number (WhatsApp)', 'tel'], ['departureDate', 'Leaving date', 'date'], ['businessUnit', 'Business unit', 'text'], ['function', 'Function', 'text'], ['location', 'Location', 'text']];
 
+// A country code picker (defaulting to the organisation's country) and the number.
+// A number typed with its own + or 00 prefix is kept as it is.
+function mobileInput(v) {
+  const codes = state.meta?.dialCodes || {};
+  if (!codes.GB) return h('input', { type: 'tel', id: 'f-mobile', placeholder: '+44 7700 900123', oninput: (e) => { v.mobile = e.target.value; } });
+  let country = codes[state.org?.country] ? state.org.country : 'GB';
+  const number = h('input', { type: 'tel', id: 'f-mobile', autocomplete: 'tel-national', placeholder: 'Mobile number', style: { flex: '1 1 10rem', minWidth: 0 } });
+  const update = () => {
+    const raw = number.value.trim();
+    const digits = raw.replace(/[^\d+]/g, '');
+    v.mobile = !digits ? undefined
+      : /^(\+|00)/.test(digits) ? raw
+      : `+${codes[country]} ${digits.replace(/^0+/, '')}`;
+  };
+  number.addEventListener('input', update);
+  const code = h('select', { 'aria-label': 'Country code', style: { flex: '0 1 9rem', minWidth: 0 }, onchange: (e) => { country = e.target.value; update(); } },
+    countryOptions().filter(([c]) => codes[c]).map(([c, n]) => h('option', { value: c, selected: c === country }, `+${codes[c]} ${n}`)));
+  return h('div', { class: 'row', style: { gap: '.5rem', flexWrap: 'nowrap' } }, code, number);
+}
+
 // Adding someone to an active programme sends their invitation in the same step.
 function addDialog(programme, reload) {
   const v = { preferredLanguage: 'en' };
@@ -141,8 +162,7 @@ function addDialog(programme, reload) {
     ? h('div', { class: 'notice' }, `The invitation goes to every channel you add, as soon as you choose “Add and send invitation”.${credits && !credits.unlimited ? ` It uses 1 credit; you have ${credits.balance}.` : ''}`)
     : h('div', { class: 'notice warn' }, 'This programme is not active yet, so the person is added and their invitation prepared. Activate the programme to send it.');
   const inputs = FIELDS.map(([k, label, type, req]) => h('div', { class: 'field', style: { margin: 0 } }, h('label', { for: `f-${k}` }, label, req ? '' : h('span', { class: 'muted' }, ' (optional)')),
-    k === 'mobile' ? h('span', { class: 'hint' }, 'International format, for example +44 7700 900123.') : null,
-    h('input', { type, id: `f-${k}`, oninput: (e) => { v[k] = e.target.value; } })));
+    k === 'mobile' ? mobileInput(v) : h('input', { type, id: `f-${k}`, oninput: (e) => { v[k] = e.target.value; } })));
   const sel = (k, label, opts) => h('div', { class: 'field', style: { margin: 0 } }, h('label', { for: `f-${k}` }, label), h('select', { id: `f-${k}`, onchange: (e) => { v[k] = e.target.value; } }, h('option', { value: '' }, '–'), opts.map(([a, b]) => h('option', { value: a, selected: v[k] === a }, b))));
   dialog({
     title: 'Add a departing employee', wide: true,
