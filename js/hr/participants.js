@@ -81,7 +81,7 @@ async function detail(id, programme, reload) {
         p.declineReason ? [h('dt', 'Reason for declining'), h('dd', p.declineReason)] : null),
       h('div', h('h4', 'Timeline'), timeline.length ? h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, timeline.map(([t, at]) => h('li', `${fmt.dateTime(at)}: ${t}`))) : h('p', { class: 'small muted' }, 'Nothing yet.')),
       p.sessions.length ? h('div', h('h4', 'Interviews'), h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, p.sessions.map((s) => h('li', `${(s.modesUsed || [s.mode]).map((m) => MODE_LABEL[m]).join(' then ')} · ${fmt.title(s.status)} · guide v${s.guideVersion ?? '–'} · ${LANG_LABEL[s.language] || s.language}`)))) : null,
-      h('p', { class: 'small muted', style: { margin: 0 } }, 'What this person said is only available through insights, after they review and submit it, and within the reporting rules.'),
+      h('p', { class: 'small muted', style: { margin: 0 } }, 'What this person said is only available through insights, after they review and submit it, and only in aggregate with at least 3 people.'),
       can('participants') && !done ? h('div', { class: 'row' },
         p.invitation.status === 'prepared' && canSend ? act('Preview and send invitation', () => sendDialog(p, 'invitation', () => { d.close(); reload(); })) : null,
         p.invitation.status !== 'prepared' && canSend ? act('Send a reminder', () => sendDialog(p, 'reminder', () => { d.close(); reload(); })) : null,

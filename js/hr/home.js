@@ -107,7 +107,7 @@ export function programmeCards(list) {
   return h('div', { class: 'grid g3' }, list.map((p) => h('button', { type: 'button', class: 'card prog-card', onclick: () => go(`#/programmes/${p.id}`) },
     h('div', { class: 'row between' }, h('strong', p.name), h('span', { class: `badge ${PROG_STATUS[p.status]}` }, fmt.title(p.status))),
     h('span', { class: 'small ink2' }, p.description || ''),
-    h('span', { class: 'small muted' }, `${p.counts.participants} invited · ${p.counts.submitted || 0} submitted · ${p.objectives} objective${p.objectives === 1 ? '' : 's'} · ${p.reportingMode === 'aggregate' ? 'aggregate reporting' : 'individual reporting'}`),
+    h('span', { class: 'small muted' }, `${p.counts.participants} invited · ${p.counts.submitted || 0} submitted · ${p.objectives} objective${p.objectives === 1 ? '' : 's'}`),
     h('span', { class: 'row', style: { gap: '.35rem' } },
       p.activeVersion ? h('span', { class: 'badge' }, `Guide v${p.activeVersion}`) : null,
       p.hasDraft ? h('span', { class: 'badge warn' }, 'Unpublished changes') : null))));
@@ -123,7 +123,7 @@ export async function render(el) {
   // The steps stay until the first invitation has gone out.
   const started = state.programmes.some((p) => p.counts.participants > 0);
   const groups = [['Active and paused', ['active', 'paused']], ['Drafts', ['draft']], ['Archived', ['archived']]];
-  mount(el, pageHead('Programmes', 'Each programme has its own learning objectives, interview guide, participants and reporting rules.',
+  mount(el, pageHead('Programmes', 'Each programme has its own learning objectives, interview guide and participants.',
     can('edit') ? h('a', { class: 'btn primary', href: '#/programmes/new' }, 'New programme') : null),
   h('div', { class: 'stack', style: { gap: '1.5rem' } },
     attention(),

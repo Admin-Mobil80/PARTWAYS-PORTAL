@@ -25,8 +25,7 @@ export function scopeLine(ins) {
   return h('div', { class: 'row small ink2', style: { gap: '.4rem' } },
     h('strong', s.programmes.map((p) => p.name).join(', ') || 'No programme'), h('span', '·'), h('span', s.periodLabel), h('span', '·'), h('span', s.basisLabel), h('span', '·'), h('span', `${ins.current.n} submitted response${ins.current.n === 1 ? '' : 's'}`),
     Object.keys(s.filters).length ? [h('span', '·'), `Filtered: ${Object.entries(s.filters).map(([k, v]) => `${DIMS.find((d) => d[0] === k)?.[1] || k} = ${v.join(', ')}`).join('; ')}`] : null,
-    s.population === 'demo' ? h('span', { class: 'badge demo' }, 'Fictional demonstration data') : s.population === 'evaluation' ? h('span', { class: 'badge info' }, 'Evaluation interviews only') : s.population === 'all' ? h('span', { class: 'badge info' }, 'Demonstration and evaluation data') : null,
-    s.reportingMode === 'aggregate' ? h('span', { class: 'badge' }, 'Aggregate reporting: no individual quotes') : null);
+    s.population === 'demo' ? h('span', { class: 'badge demo' }, 'Fictional demonstration data') : s.population === 'evaluation' ? h('span', { class: 'badge info' }, 'Evaluation interviews only') : s.population === 'all' ? h('span', { class: 'badge info' }, 'Demonstration and evaluation data') : null);
 }
 
 function filterBar(q, ins, onChange) {

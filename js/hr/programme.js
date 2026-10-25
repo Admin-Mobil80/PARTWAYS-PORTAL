@@ -97,7 +97,7 @@ async function overview(el, { programme: p }) {
           h('dt', 'Formats'), h('dd', p.modes.map((m) => MODE_LABEL[m]).join(', ')),
           h('dt', 'Languages'), h('dd', p.languages.map((l) => l.toUpperCase()).join(', ')),
           h('dt', 'Lengths'), h('dd', p.durations.map((d) => state.meta.durations[d].label).join(', ')),
-          h('dt', 'Reporting'), h('dd', `${p.reportingMode === 'aggregate' ? 'Aggregate only (no quotes)' : 'Individual evidence allowed'} · minimum ${p.reportingMinimum} responses`),
+          h('dt', 'Reporting'), h('dd', 'Aggregate only (no quotes) · shown from 3 responses'),
           h('dt', 'Identity'), h('dd', 'De-identified: people are known by PartWays Interview Id')),
         h('div', { class: 'row' },
           can('insights') && p.activeVersion ? h('a', { class: 'btn sm', href: `#/insights?programmeId=${p.id}` }, 'View findings') : null,
@@ -341,7 +341,7 @@ function settings(el, p) {
   mount(el, h('form', { class: 'stack', style: { maxWidth: '860px', gap: '1.25rem' }, onsubmit: async (e) => {
     e.preventDefault();
     try {
-      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, framing: p.template === 'custom' ? f.framing : undefined, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reportingMode: f.reportingMode, reportingMinimum: f.reportingMinimum, reminder: f.reminder, messages: f.messages } });
+      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, framing: p.template === 'custom' ? f.framing : undefined, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reminder: f.reminder, messages: f.messages } });
       await refreshProgrammes();
       toast('Settings saved.');
     } catch (err) { toast(err.message, { kind: 'bad' }); }
@@ -359,12 +359,9 @@ function settings(el, p) {
     checks('Lengths', Object.entries(state.meta.durations).map(([k, d]) => [k, `${d.label} (${d.minutes} min)`]), f.durations, 'durations'),
     h('p', { class: 'small muted', style: { margin: 0 } }, 'Employees choose to talk or type with the PartWays AI interviewer, and can switch at any time.')),
   h('section', { class: 'card' }, h('h3', 'Reporting'),
-    h('div', { class: 'field' }, h('label', 'Reporting mode'),
-      h('select', { onchange: (e) => { f.reportingMode = e.target.value; } }, h('option', { value: 'individual', selected: f.reportingMode === 'individual' }, 'Individual evidence allowed (quotes and paraphrases shown to authorised users)'), h('option', { value: 'aggregate', selected: f.reportingMode === 'aggregate' }, 'Aggregate only (counts and themes, no individual quotes)'))),
-    h('div', { class: 'field' }, h('label', 'Reporting minimum'), h('span', { class: 'hint' }, 'Results for any group with fewer submitted responses are hidden. Between 3 and 50.'),
-      h('input', { type: 'number', min: 3, max: 50, value: f.reportingMinimum, style: { maxWidth: '8rem' }, oninput: (e) => { f.reportingMinimum = Number(e.target.value); } }))),
+    h('p', { class: 'small muted', style: { margin: 0 } }, 'Findings are reported in aggregate: counts, themes and summaries, never individual quotes. Results for any group with fewer than 3 submitted responses are hidden, so no one can be singled out.')),
   h('section', { class: 'card' }, h('h3', 'Invitation messages'),
-    h('p', { class: 'small muted' }, 'Sent by email and/or WhatsApp, to every channel each person has. Placeholders: {org} {minutes} {deadline} {link} {interviewId}. Messages do not use names. Until WhatsApp is connected, WhatsApp messages are recorded but not delivered; email is delivered.'),
+    h('p', { class: 'small muted' }, 'Sent by email and/or WhatsApp, to every channel each person has. Placeholders: {org} {minutes} {deadline} {link} {interviewId}. Messages do not use names. Email uses the wording below; WhatsApp sends PartWays’ approved message with the same details and a button to open the interview.'),
     h('div', { class: 'grid g2' },
       h('div', h('div', { class: 'field' }, h('label', 'Invitation'), h('textarea', { rows: 6, oninput: (e) => { f.messages.invitation = e.target.value; updPreview(); } }, f.messages.invitation)),
         h('div', { class: 'field' }, h('label', 'Reminder'), h('textarea', { rows: 4, oninput: (e) => { f.messages.reminder = e.target.value; } }, f.messages.reminder))),
