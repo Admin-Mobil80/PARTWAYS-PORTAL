@@ -95,7 +95,6 @@ async function overview(el, { programme: p }) {
         h('dl', { class: 'kv' },
           h('dt', 'Template'), h('dd', state.meta.templates[p.template]?.label || p.template),
           h('dt', 'Formats'), h('dd', p.modes.map((m) => MODE_LABEL[m]).join(', ')),
-          h('dt', 'Languages'), h('dd', p.languages.map((l) => l.toUpperCase()).join(', ')),
           h('dt', 'Lengths'), h('dd', p.durations.map((d) => state.meta.durations[d].label).join(', ')),
           h('dt', 'Reporting'), h('dd', 'Aggregate only (no quotes) · shown from 3 responses'),
           h('dt', 'Identity'), h('dd', 'De-identified: people are known by PartWays Interview Id')),
@@ -265,12 +264,11 @@ async function guideEditor(el, data, query) {
   };
 
   const previewForm = () => {
-    let mode = 'ai_text', lang = 'en', dur = 'standard', segVal = '';
+    let mode = 'ai_text', dur = 'standard', segVal = '';
     const segOptions = [...new Set(g.objectives.filter((o) => o.appliesTo).flatMap((o) => o.appliesTo.values.map((v) => `${o.appliesTo.dimension}=${v}`)))];
     return h('div', { class: 'stack' },
       h('div', { class: 'grid g2' },
         h('label', { class: 'small' }, 'Format', h('select', { onchange: (e) => { mode = e.target.value; } }, h('option', { value: 'ai_text' }, 'Text'), h('option', { value: 'ai_voice' }, 'Voice'))),
-        h('label', { class: 'small' }, 'Language', h('select', { onchange: (e) => { lang = e.target.value; } }, state.meta.languages.map((l) => h('option', { value: l.code }, l.label)))),
         h('label', { class: 'small' }, 'Length', h('select', { onchange: (e) => { dur = e.target.value; } }, Object.entries(state.meta.durations).map(([k, d]) => h('option', { value: k, selected: k === 'standard' }, d.label)))),
         segOptions.length ? h('label', { class: 'small' }, 'Preview as', h('select', { onchange: (e) => { segVal = e.target.value; } }, h('option', { value: '' }, 'Anyone'), segOptions.map((s) => h('option', { value: s }, s.split('=')[1])))) : null),
       h('button', { class: 'btn', type: 'button', onclick: async (e) => {
@@ -278,7 +276,7 @@ async function guideEditor(el, data, query) {
         btn.disabled = true;
         try {
           const segment = segVal ? { [segVal.split('=')[0]]: segVal.split('=')[1] } : null;
-          const r = await hr(`/api/hr/programmes/${p.id}/preview`, { method: 'POST', body: { guide: { objectives: g.objectives.filter((o) => o.title.trim()), topics: g.topics }, mode, language: lang, duration: dur, segment } });
+          const r = await hr(`/api/hr/programmes/${p.id}/preview`, { method: 'POST', body: { guide: { objectives: g.objectives.filter((o) => o.title.trim()), topics: g.topics }, mode, language: 'en', duration: dur, segment } });
           window.open(`/interview/#/s/${r.id}?t=${r.accessToken}`, '_blank', 'noopener');
         } catch (err) { toast(err.message, { kind: 'bad' }); } finally { btn.disabled = false; }
       } }, 'Open live preview'));
@@ -341,7 +339,7 @@ function settings(el, p) {
   mount(el, h('form', { class: 'stack', style: { maxWidth: '860px', gap: '1.25rem' }, onsubmit: async (e) => {
     e.preventDefault();
     try {
-      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, framing: p.template === 'custom' ? f.framing : undefined, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, languages: f.languages, modes: f.modes, durations: f.durations, reminder: f.reminder, messages: f.messages } });
+      await hr(`/api/hr/programmes/${p.id}/settings`, { method: 'PUT', body: { name: f.name, description: f.description, framing: p.template === 'custom' ? f.framing : undefined, intro: f.intro, completionMessage: f.completionMessage, feedbackNotice: f.feedbackNotice, modes: f.modes, durations: f.durations, reminder: f.reminder, messages: f.messages } });
       await refreshProgrammes();
       toast('Settings saved.');
     } catch (err) { toast(err.message, { kind: 'bad' }); }
@@ -355,9 +353,8 @@ function settings(el, p) {
     ta('Completion message', 'completionMessage', null, 2),),
   h('section', { class: 'card' }, h('h3', 'Interview options'),
     checks('Formats offered', Object.entries(MODE_LABEL), f.modes, 'modes'),
-    checks('Languages', state.meta.languages.map((l) => [l.code, l.label]), f.languages, 'languages'),
     checks('Lengths', Object.entries(state.meta.durations).map(([k, d]) => [k, `${d.label} (${d.minutes} min)`]), f.durations, 'durations'),
-    h('p', { class: 'small muted', style: { margin: 0 } }, 'Employees choose to talk or type with the PartWays AI interviewer, and can switch at any time.')),
+    h('p', { class: 'small muted', style: { margin: 0 } }, 'Employees choose to talk or type with the PartWays AI interviewer, and can switch at any time. Interviews are in English.')),
   h('section', { class: 'card' }, h('h3', 'Reporting'),
     h('p', { class: 'small muted', style: { margin: 0 } }, 'Findings are reported in aggregate: counts, themes and summaries, never individual quotes. Results for any group with fewer than 3 submitted responses are hidden, so no one can be singled out.')),
   h('section', { class: 'card' }, h('h3', 'Invitation messages'),

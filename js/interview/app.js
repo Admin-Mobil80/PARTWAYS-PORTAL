@@ -50,7 +50,10 @@ async function route() {
       ctx.invite = await api(`/api/invite/${ctx.token}`);
       ctx.programme = ctx.invite.programme;
       const saved = store.get('pw.lang');
-      setLang(ctx.programme.languages.some((l) => l.code === saved) ? saved : ctx.invite.participant.preferredLanguage);
+      // Only the languages the programme offers now: earlier invitations may name German or French.
+      const offered = ctx.programme.languages.map((l) => l.code);
+      const pref = ctx.invite.participant.preferredLanguage;
+      setLang(offered.includes(saved) ? saved : offered.includes(pref) ? pref : offered[0] || 'en');
       api(`/api/invite/${ctx.token}/open`, { method: 'POST' }).catch(() => {});
       return inviteScreen();
     }
@@ -124,8 +127,7 @@ function inviteScreen() {
     h('ol', { class: 'steps' }, t('steps').map((s) => h('li', s))),
     h('details', { class: 'card flat', style: { margin: '1rem 0' } },
       h('summary', { style: { cursor: 'pointer', fontWeight: 600 } }, t('howUsed')),
-      h('p', { style: { marginTop: '.6rem' } }, p.feedbackNotice),
-      h('p', { class: 'muted small' }, `${t('language')}: ${p.languages.map((l) => l.native).join(', ')}`)),
+      h('p', { style: { marginTop: '.6rem' } }, p.feedbackNotice)),
     h('div', { class: 'row' },
       h('button', { class: 'btn primary lg', onclick: () => formatScreen() }, t('begin')),
       h('button', { class: 'btn ghost', onclick: declineDialog }, t('decline'))),

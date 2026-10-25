@@ -106,7 +106,6 @@ export function loading(label = 'Loading…') {
 export const MODE_LABEL = { ai_voice: 'Voice', ai_text: 'Text' };
 
 export const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
-export const LANG_LABEL = { en: 'English', de: 'German', fr: 'French' };
 
 // Theme labels after any analyst renames, merges or splits.
 export async function refreshThemes() {

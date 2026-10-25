@@ -5,7 +5,7 @@ import { state, hr, can, go, pageHead, loading, errorBox, download, MODE_LABEL, 
 import { setCrumbs } from './app.js';
 import { chartCard, table, bars, pairBars, toneBar, toneLegend, TONE, ofN } from './charts.js';
 
-const DIMS = [['businessUnit', 'Business unit'], ['function', 'Function'], ['location', 'Location'], ['tenureBand', 'Tenure band'], ['roleLevel', 'Role level'], ['language', 'Interview language'], ['mode', 'Interview format']];
+const DIMS = [['businessUnit', 'Business unit'], ['function', 'Function'], ['location', 'Location'], ['tenureBand', 'Tenure band'], ['roleLevel', 'Role level'], ['mode', 'Interview format']];
 const STATUS_BADGE = { supported: ['good', 'Supported by evidence'], emerging: ['warn', 'Emerging'], insufficient: ['', 'Not enough evidence'] };
 const PREVENT = { yes: 'Yes', maybe: 'Possibly', no: 'No', unsure: 'Not sure', not_discussed: 'Not discussed' };
 
@@ -36,13 +36,12 @@ function filterBar(q, ins, onChange) {
   let dim = '';
   const valSel = h('select', { 'aria-label': 'Segment value', disabled: true, onchange: (e) => { if (!e.target.value) return; q.filters = { ...q.filters, [dim]: [...new Set([...(q.filters[dim] || []), e.target.value])] }; onChange(); } }, h('option', '–'));
   const valuesFor = (d) => {
-    if (d === 'language') return ['en', 'de', 'fr'];
     if (d === 'mode') return Object.keys(MODE_LABEL);
     return (groups[d]?.groups || []).map((g) => g.value);
   };
   const dimSel = h('select', { 'aria-label': 'Add a segment filter', onchange: (e) => {
     dim = e.target.value;
-    valSel.replaceChildren(h('option', { value: '' }, 'Choose…'), ...valuesFor(dim).map((v) => h('option', { value: v }, dim === 'mode' ? MODE_LABEL[v] : dim === 'language' ? v.toUpperCase() : v)));
+    valSel.replaceChildren(h('option', { value: '' }, 'Choose…'), ...valuesFor(dim).map((v) => h('option', { value: v }, dim === 'mode' ? MODE_LABEL[v] : v)));
     valSel.disabled = !dim;
   } }, h('option', { value: '' }, 'Add a filter…'), DIMS.map(([k, l]) => h('option', { value: k }, l)));
   const progs = state.programmes.filter((p) => p.activeVersion);

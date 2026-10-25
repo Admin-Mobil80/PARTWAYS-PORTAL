@@ -31,9 +31,7 @@ export async function tryInterviewDialog(programmeId) {
   const active = state.programmes.filter((p) => p.status === 'active');
   let persona = 'workload';
   let prog = programmeId || 'prog_general';
-  let lang = 'en';
   const progSel = h('select', { id: 'tp', onchange: (e) => { prog = e.target.value; } }, active.map((p) => h('option', { value: p.id, selected: p.id === prog }, p.name)));
-  const langSel = h('select', { id: 'tl', onchange: (e) => { lang = e.target.value; } }, ['en', 'de', 'fr'].map((l) => h('option', { value: l }, { en: 'English', de: 'Deutsch', fr: 'Français' }[l])));
   const brief = h('p', { class: 'small ink2' });
   const cards = h('div', { class: 'stack', role: 'radiogroup', 'aria-label': 'Persona' });
   const draw = () => {
@@ -46,10 +44,10 @@ export async function tryInterviewDialog(programmeId) {
     title: 'Try an interview', wide: true,
     body: h('div', { class: 'stack' },
       h('p', { class: 'ink2' }, 'This creates a fresh evaluation participant with a real invitation link and opens the employee experience in a new tab. Submitted evaluation interviews appear in insights when you include evaluation data, and you can reset them from Settings.'),
-      h('div', { class: 'grid g2' }, h('div', { class: 'field' }, h('label', { for: 'tp' }, 'Programme'), progSel), h('div', { class: 'field' }, h('label', { for: 'tl' }, 'Preferred language'), langSel)),
+      h('div', { class: 'field' }, h('label', { for: 'tp' }, 'Programme'), progSel),
       h('div', h('label', 'Optional persona to play'), cards), brief),
     actions: [{ label: 'Cancel' }, { label: 'Create and open interview', kind: 'primary', onClick: async () => {
-      const r = await hr('/api/hr/demo/try', { method: 'POST', body: { persona: persona || null, programmeId: prog, language: lang } });
+      const r = await hr('/api/hr/demo/try', { method: 'POST', body: { persona: persona || null, programmeId: prog } });
       window.open(r.link, '_blank', 'noopener');
       toast(`Opened interview ${r.participant.interviewId} in a new tab.`);
     } }],

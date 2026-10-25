@@ -2,7 +2,7 @@
 // person has; WhatsApp is simulated until connected) and imports.
 // This view is operational only: it never shows what anyone said in an interview.
 import { h, mount, fmt, toast, dialog, confirmDialog, debounce } from '../lib.js';
-import { state, hr, can, pageHead, STATUS_LABEL, MODE_LABEL, LANG_LABEL, loading, errorBox, refreshProgrammes } from './core.js';
+import { state, hr, can, pageHead, STATUS_LABEL, MODE_LABEL, loading, errorBox, refreshProgrammes } from './core.js';
 import { setCrumbs, updateCredits } from './app.js';
 import { countryOptions } from '../countries.js';
 
@@ -76,11 +76,11 @@ async function detail(id, programme, reload) {
         ...[['Email', p.email], ['Mobile (WhatsApp)', p.mobile]].filter(([, masked]) => masked).flatMap(([label, masked]) => [h('dt', label),
           h('dd', masked, h('span', { class: 'small muted' }, ' · masked to keep feedback de-identified'))]),
         h('dt', 'Invitations go by'), h('dd', p.invitation.channel || '–'), h('dt', 'Segment'), h('dd', [p.businessUnit, p.function, p.location, p.tenureBand, p.roleLevel].filter(Boolean).join(' · ') || '–'),
-        h('dt', 'Leaving'), h('dd', fmt.date(p.departureDate)), h('dt', 'Preferred language'), h('dd', LANG_LABEL[p.preferredLanguage] || p.preferredLanguage),
+        h('dt', 'Leaving'), h('dd', fmt.date(p.departureDate)),
         h('dt', 'Response deadline'), h('dd', fmt.date(p.invitation.deadline)),
         p.declineReason ? [h('dt', 'Reason for declining'), h('dd', p.declineReason)] : null),
       h('div', h('h4', 'Timeline'), timeline.length ? h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, timeline.map(([t, at]) => h('li', `${fmt.dateTime(at)}: ${t}`))) : h('p', { class: 'small muted' }, 'Nothing yet.')),
-      p.sessions.length ? h('div', h('h4', 'Interviews'), h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, p.sessions.map((s) => h('li', `${(s.modesUsed || [s.mode]).map((m) => MODE_LABEL[m]).join(' then ')} · ${fmt.title(s.status)} · guide v${s.guideVersion ?? '–'} · ${LANG_LABEL[s.language] || s.language}`)))) : null,
+      p.sessions.length ? h('div', h('h4', 'Interviews'), h('ul', { class: 'small', style: { margin: 0, paddingLeft: '1.1rem' } }, p.sessions.map((s) => h('li', `${(s.modesUsed || [s.mode]).map((m) => MODE_LABEL[m]).join(' then ')} · ${fmt.title(s.status)} · guide v${s.guideVersion ?? '–'}`)))) : null,
       h('p', { class: 'small muted', style: { margin: 0 } }, 'What this person said is only available through insights, after they review and submit it, and only in aggregate with at least 3 people.'),
       can('participants') && !done ? h('div', { class: 'row' },
         p.invitation.status === 'prepared' && canSend ? act('Preview and send invitation', () => sendDialog(p, 'invitation', () => { d.close(); reload(); })) : null,
@@ -168,8 +168,7 @@ function addDialog(programme, reload) {
     title: 'Add a departing employee', wide: true,
     body: h('div', { class: 'stack' }, h('p', { class: 'small ink2', style: { margin: 0 } }, 'Add an email address, a mobile number, or both. No name is needed. Each person gets a PartWays Interview Id, and their feedback is only ever shown under that Id.'), h('div', { class: 'grid g2' }, inputs,
       sel('tenureBand', 'Tenure band', ['Under 6 months', '6–12 months', '1–3 years', '3–5 years', '5+ years'].map((x) => [x, x])),
-      sel('roleLevel', 'Role level', ['Individual contributor', 'Team lead', 'Manager', 'Senior leader'].map((x) => [x, x])),
-      sel('preferredLanguage', 'Preferred language', [['en', 'English'], ['de', 'German'], ['fr', 'French']])), note),
+      sel('roleLevel', 'Role level', ['Individual contributor', 'Team lead', 'Manager', 'Senior leader'].map((x) => [x, x]))), note),
     actions: [{ label: 'Cancel' },
       ...(active ? [{ label: 'Add without sending', onClick: () => add(false) }] : []),
       { label: active ? 'Add and send invitation' : 'Add', kind: 'primary', onClick: () => add(active) }],
@@ -188,7 +187,7 @@ function importDialog(programme, reload) {
     if (send && r.sent) updateCredits();
     reload(); refreshProgrammes();
   };
-  const sample = 'email,mobile,business unit,function,location,tenure band,role level,departure date,language\nalex.leaver@example.com,+44 7700 900801,Operations,Transport planning,Leeds,1–3 years,Individual contributor,2026-11-14,en\n,+49 151 00900801,Sales,Account management,Berlin,3–5 years,Manager,30/11/2026,de\nsam.leaver@example.com,,Finance,Reporting,London,5+ years,Manager,2026-12-01,en';
+  const sample = 'email,mobile,business unit,function,location,tenure band,role level,departure date\nalex.leaver@example.com,+44 7700 900801,Operations,Transport planning,Leeds,1–3 years,Individual contributor,2026-11-14\n,+49 151 00900801,Sales,Account management,Berlin,3–5 years,Manager,30/11/2026\nsam.leaver@example.com,,Finance,Reporting,London,5+ years,Manager,2026-12-01';
   const ta = h('textarea', { rows: 8, id: 'csv', placeholder: sample, style: { fontFamily: 'ui-monospace, monospace', fontSize: '.82rem' } });
   const file = h('input', { type: 'file', accept: '.csv,text/csv,.txt', onchange: async (e) => { const f = e.target.files[0]; if (f) ta.value = await f.text(); } });
   const result = h('div');
