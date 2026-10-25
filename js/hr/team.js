@@ -5,7 +5,7 @@ import { setCrumbs } from './app.js';
 
 const ROLE_HELP = {
   owner: 'Everything: programmes, inviting people, credits and the team.',
-  analyst: 'Findings, the assistant, reports and theme changes. Cannot invite people or buy credits.',
+  analyst: 'Findings, the assistant, reports and theme changes. Cannot invite people or manage credits.',
   leader: 'Reads findings and reports, and asks the assistant.',
 };
 

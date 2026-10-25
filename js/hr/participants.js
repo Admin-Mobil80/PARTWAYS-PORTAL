@@ -108,7 +108,7 @@ async function sendDialog(p, kind, after) {
       h('div', { class: 'small muted' }, `Goes by ${m.channel} · `, h('span', { class: 'mono' }, m.interviewId)),
       h('div', { class: m.messages.length > 1 ? 'grid g2' : 'stack' }, m.messages.map(preview)),
       metered ? h('div', { class: `notice ${empty ? 'warn' : ''}` }, empty
-        ? h('div', 'You have no credits left. ', h('a', { href: '#/billing' }, 'Buy credits'), ' to send this invitation.')
+        ? h('div', 'You have no credits left. ', h('a', { href: '#/billing' }, 'Get more credits'), ' to send this invitation.')
         : `Sending uses 1 credit, however many channels it goes to. You have ${credits.balance}.`) : null,
       kind === 'reminder' ? h('div', { class: 'small muted' }, 'Reminders are free.') : null,
       state.org.demo

@@ -94,7 +94,7 @@ function guided() {
 function attention() {
   const items = [];
   const credits = state.me?.credits;
-  if (credits && !credits.unlimited && credits.balance === 0) items.push(['You have no interview credits left. Buy credits to send more invitations.', '#/billing']);
+  if (credits && !credits.unlimited && credits.balance === 0) items.push(['You have no interview credits left. Get more credits to send more invitations.', '#/billing']);
   for (const p of state.programmes.filter((x) => x.hasDraft && can('edit'))) items.push([`${p.name} has guide changes that are not active yet`, `#/programmes/${p.id}/guide`]);
   for (const p of state.programmes.filter((x) => x.processing)) items.push([`${p.name}: ${p.processing} submitted interview(s) still processing`, `#/programmes/${p.id}`]);
   if (!items.length) return null;
