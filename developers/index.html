@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PartWays API</title>
+  <meta name="description" content="Start PartWays exit interviews from your HR system. Reference for the PartWays API v1: authentication, invitations, statuses and errors.">
+  <link rel="canonical" href="https://partways.org/developers/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PartWays">
+  <meta property="og:url" content="https://partways.org/developers/">
+  <meta property="og:title" content="PartWays API">
+  <meta property="og:description" content="Start PartWays exit interviews from your HR system.">
+  <meta property="og:image" content="https://partways.org/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    body { background: var(--surface); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+    .site-head { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .site-head .wrap { display: flex; align-items: center; gap: 1rem; min-height: 60px; }
+    .site-head nav { display: flex; gap: 1.25rem; margin-left: auto; font-size: .92rem; }
+    .site-head nav a { color: var(--ink-2); text-decoration: none; }
+    .layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 2.5rem; padding-top: 2.5rem; padding-bottom: 4rem; }
+    .toc { position: sticky; top: 84px; align-self: start; font-size: .9rem; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+    .toc a { color: var(--ink-2); text-decoration: none; }
+    .toc a:hover { color: var(--ink); }
+    @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; } .toc { position: static; } .site-head nav { display: none; } }
+    main h1 { font-size: clamp(1.8rem, 4.5vw, 2.5rem); letter-spacing: -.02em; margin: 0 0 .75rem; }
+    main h2 { margin: 2.75rem 0 .75rem; padding-top: .25rem; scroll-margin-top: 80px; }
+    main h3 { margin: 1.75rem 0 .5rem; scroll-margin-top: 80px; }
+    .lede { font-size: 1.08rem; color: var(--ink-2); max-width: 720px; }
+    pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; overflow-x: auto; font-size: .83rem; line-height: 1.5; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+    p code, li code, td code { background: var(--panel-2); padding: .08rem .3rem; border-radius: 4px; }
+    .ep { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; margin: 1.75rem 0 .4rem; }
+    .ep h3 { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; overflow-wrap: anywhere; }
+    .verb { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: .15rem .45rem; border-radius: 5px; background: var(--accent-soft); color: var(--accent); }
+    .verb.post { background: var(--good-soft); color: var(--good); }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+    th, td { text-align: left; vertical-align: top; padding: .5rem .6rem; border-bottom: 1px solid var(--line); }
+    th { font-weight: 600; color: var(--ink-2); }
+    .note { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: .75rem 1rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--ink); }
+    footer { border-top: 1px solid var(--line); padding: 1.5rem 0; font-size: .85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="pw-mark" href="/"><span class="dot" aria-hidden="true">PW</span>PartWays</a>
+      <nav aria-label="Site"><a href="/">Home</a><a href="/hr/">Sign in</a></nav>
+    </div>
+  </header>
+
+  <div class="wrap layout">
+    <nav class="toc" aria-label="On this page">
+      <ol>
+        <li><a href="#start">Getting started</a></li>
+        <li><a href="#auth">Authentication</a></li>
+        <li><a href="#flow">Typical HR-system flow</a></li>
+        <li><a href="#endpoints">Endpoints</a></li>
+        <li><a href="#object">The invitation object</a></li>
+        <li><a href="#statuses">Statuses</a></li>
+        <li><a href="#errors">Errors</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="/developers/openapi.json">OpenAPI specification</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <h1>PartWays API</h1>
+      <p class="lede">Start exit interviews from your HR system. When someone resigns, your HR system adds them to a PartWays programme, and PartWays sends their invitation by email and/or WhatsApp. You can follow each invitation’s progress and cancel it if the resignation is withdrawn.</p>
+
+      <h2 id="start">Getting started</h2>
+      <ol>
+        <li>Sign in to your PartWays workspace as an owner and activate the programme people should be invited to.</li>
+        <li>Go to <strong>Settings → API access</strong>, choose <strong>Create API key</strong> and name it after the system that will use it. Copy the key: it is shown once.</li>
+        <li>Store the key in your HR system’s secure settings and call the API from your server or integration platform. The API is not meant to be called from a web browser.</li>
+      </ol>
+      <p>Base URL: <code>https://partways.org/api/v1</code>. Requests and responses are JSON. Each invitation sent uses one credit, exactly as when it is sent from the workspace.</p>
+
+      <h2 id="auth">Authentication</h2>
+      <p>Send the key in the <code>Authorization</code> header. <code>X-API-Key: &lt;key&gt;</code> is also accepted.</p>
+<pre><code>Authorization: Bearer pw_live_3f9a0c1d2e4b_…</code></pre>
+      <p>A key acts for your organisation’s workspace with the rights of an owner, for invitations only. Revoke a key in Settings → API access at any time; systems using it stop working straight away. Keys show when they were last used.</p>
+
+      <h2 id="flow">Typical HR-system flow</h2>
+      <table>
+        <thead><tr><th scope="col">In your HR system</th><th scope="col">Call</th></tr></thead>
+        <tbody>
+          <tr><td>Set-up: choose which programme to use</td><td><code>GET /programmes</code></td></tr>
+          <tr><td>A resignation is recorded</td><td><code>POST /invitations</code> with your case or employee reference as <code>externalId</code></td></tr>
+          <tr><td>Show progress on the leaver’s record</td><td><code>GET /invitations/{interviewId}</code>, or <code>GET /invitations?externalId=…</code></td></tr>
+          <tr><td>The resignation is withdrawn</td><td><code>POST /invitations/{interviewId}/cancel</code></td></tr>
+        </tbody>
+      </table>
+      <p class="note">Retries are safe. With an <code>externalId</code>, repeating <code>POST /invitations</code> returns the invitation already made (<code>200</code>, <code>"created": false</code>) instead of inviting the person twice or using another credit.</p>
+
+      <h2 id="endpoints">Endpoints</h2>
+
+      <div class="ep"><span class="verb">GET</span><h3>/programmes</h3></div>
+      <p>Your programmes that are not archived. Invitations can only be sent for programmes whose <code>status</code> is <code>active</code>.</p>
+<pre><code>curl https://partways.org/api/v1/programmes \
+  -H "Authorization: Bearer $PARTWAYS_API_KEY"
+
+{
+  "programmes": [
+    { "id": "prog_276e8840b041", "name": "Exit interviews", "status": "active", "template": "general" }
+  ]
+}</code></pre>
+
+      <div class="ep"><span class="verb post">POST</span><h3>/invitations</h3></div>
+      <p>Adds a departing employee to a programme and sends their invitation. Give an email address, a mobile number, or both; the invitation goes to every channel given. No name is needed: each person gets a PartWays Interview Id.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>programmeId</code></td><td>string, required</td><td>From <code>GET /programmes</code>.</td></tr>
+          <tr><td><code>email</code></td><td>string</td><td>Personal email address. At least one of <code>email</code> and <code>mobile</code> is required.</td></tr>
+          <tr><td><code>mobile</code></td><td>string</td><td>WhatsApp number in international format, for example <code>+44 7700 900123</code>. A local number starting with 0 takes your organisation’s country code.</td></tr>
+          <tr><td><code>externalId</code></td><td>string, up to 100</td><td>Your reference for this leaver or case, used to find the invitation and to make retries safe. Use an opaque id, not a name.</td></tr>
+          <tr><td><code>departureDate</code></td><td>string</td><td><code>YYYY-MM-DD</code>.</td></tr>
+          <tr><td><code>businessUnit</code>, <code>function</code>, <code>location</code></td><td>string</td><td>Segments for findings. Results for any group with fewer than 3 responses are hidden.</td></tr>
+          <tr><td><code>tenureBand</code></td><td>string</td><td><code>Under 6 months</code>, <code>6–12 months</code>, <code>1–3 years</code>, <code>3–5 years</code> or <code>5+ years</code>.</td></tr>
+          <tr><td><code>roleLevel</code></td><td>string</td><td><code>Individual contributor</code>, <code>Team lead</code>, <code>Manager</code> or <code>Senior leader</code>.</td></tr>
+          <tr><td><code>send</code></td><td>boolean</td><td>Default <code>true</code>. With <code>false</code> the person is added and the invitation prepared, without using a credit; send it later with <code>POST /invitations/{interviewId}/send</code>.</td></tr>
+        </tbody>
+      </table></div>
+<pre><code>curl https://partways.org/api/v1/invitations \
+  -H "Authorization: Bearer $PARTWAYS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "programmeId": "prog_276e8840b041",
+    "email": "alex.personal@example.com",
+    "mobile": "+44 7700 900123",
+    "externalId": "HR-CASE-1001",
+    "departureDate": "2026-11-30",
+    "businessUnit": "Operations",
+    "tenureBand": "1–3 years"
+  }'
+
+201 Created
+{
+  "created": true,
+  "invitation": {
+    "interviewId": "PW-7KQ2-M4XD",
+    "programmeId": "prog_276e8840b041",
+    "externalId": "HR-CASE-1001",
+    "status": "invited",
+    "departureDate": "2026-11-30",
+    "invitation": { "status": "sent", "channels": ["email", "whatsapp"], "sentAt": "2026-10-25T10:02:11.000Z", "openedAt": null, "deadline": "2026-11-15", "remindersSent": 0, "delivered": true },
+    "submittedAt": null,
+    "createdAt": "2026-10-25T10:02:10.000Z"
+  }
+}</code></pre>
+      <p>If the person was added but a message could not be delivered, the response is still <code>201</code> with a <code>sendError</code>; no credit is used, and you can retry with <code>POST /invitations/{interviewId}/send</code>. Non-standard tenure bands or role levels are kept as written and reported in <code>warnings</code>.</p>
+
+      <div class="ep"><span class="verb">GET</span><h3>/invitations/{interviewId}</h3></div>
+      <p>One invitation by its PartWays Interview Id.</p>
+
+      <div class="ep"><span class="verb">GET</span><h3>/invitations</h3></div>
+      <p>Invitations made in your workspace, newest first. Optional query parameters: <code>externalId</code>, <code>programmeId</code>, <code>status</code>, <code>limit</code> (1–100, default 50). Returns <code>{ "invitations": [...], "total": n }</code>.</p>
+
+      <div class="ep"><span class="verb post">POST</span><h3>/invitations/{interviewId}/send</h3></div>
+      <p>Sends an invitation that was added with <code>"send": false</code>, or that could not be delivered. Uses one credit.</p>
+
+      <div class="ep"><span class="verb post">POST</span><h3>/invitations/{interviewId}/cancel</h3></div>
+      <p>Cancels an invitation, for example when a resignation is withdrawn. The link stops working. Feedback that has been submitted cannot be cancelled. Credits are not returned.</p>
+
+      <h2 id="object">The invitation object</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Field</th><th scope="col">Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>interviewId</code></td><td>The PartWays Interview Id, for example <code>PW-7KQ2-M4XD</code>. The person sees it in their invitation.</td></tr>
+          <tr><td><code>programmeId</code>, <code>externalId</code>, <code>departureDate</code></td><td>As given.</td></tr>
+          <tr><td><code>status</code></td><td>Where the person is: see <a href="#statuses">Statuses</a>.</td></tr>
+          <tr><td><code>invitation.status</code></td><td><code>prepared</code> (not sent yet), <code>sent</code> or <code>cancelled</code>.</td></tr>
+          <tr><td><code>invitation.channels</code></td><td><code>email</code> and/or <code>whatsapp</code>.</td></tr>
+          <tr><td><code>invitation.sentAt</code>, <code>openedAt</code></td><td>When the invitation was sent and first opened.</td></tr>
+          <tr><td><code>invitation.deadline</code></td><td>Last day to respond, 21 days after the invitation is added.</td></tr>
+          <tr><td><code>invitation.remindersSent</code>, <code>delivered</code></td><td>Reminders sent so far; whether at least one channel was delivered.</td></tr>
+          <tr><td><code>submittedAt</code></td><td>When the person submitted their feedback, or <code>null</code>.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="statuses">Statuses</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col"><code>status</code></th><th scope="col">Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>invited</code></td><td>Added; the invitation is prepared or sent and not yet opened.</td></tr>
+          <tr><td><code>not_started</code></td><td>Opened the invitation, has not started.</td></tr>
+          <tr><td><code>in_progress</code></td><td>Started the interview.</td></tr>
+          <tr><td><code>awaiting_review</code></td><td>Finished talking; reviewing their summary before deciding to submit.</td></tr>
+          <tr><td><code>submitted</code></td><td>Feedback submitted. It appears in your workspace’s findings, de-identified.</td></tr>
+          <tr><td><code>declined</code></td><td>Chose not to take part.</td></tr>
+          <tr><td><code>withdrawn</code></td><td>Withdrew their feedback.</td></tr>
+          <tr><td><code>expired</code></td><td>Did not respond by the deadline.</td></tr>
+          <tr><td><code>abandoned</code></td><td>Started but did not finish.</td></tr>
+          <tr><td><code>cancelled</code></td><td>Cancelled by your organisation.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="errors">Errors</h2>
+      <p>Errors return a JSON body with a readable <code>error</code> and, for most errors, a <code>details.code</code>:</p>
+<pre><code>402 Payment Required
+{ "error": "You have no interview credits left. …", "details": { "code": "no_credits" } }</code></pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Status</th><th scope="col">When</th></tr></thead>
+        <tbody>
+          <tr><td><code>400</code></td><td>Invalid request, for example no email or mobile, or an invalid number (<code>invalid</code>).</td></tr>
+          <tr><td><code>401</code></td><td>Missing, invalid or revoked API key (<code>unauthorized</code>).</td></tr>
+          <tr><td><code>402</code></td><td>No credits left (<code>no_credits</code>). Use Request more credits in the workspace.</td></tr>
+          <tr><td><code>404</code></td><td>Programme or invitation not found in your workspace (<code>not_found</code>).</td></tr>
+          <tr><td><code>409</code></td><td>The programme is not active, the person was already invited to this programme with that email or mobile (<code>duplicate</code>), or the invitation was already sent or cancelled.</td></tr>
+          <tr><td><code>502</code></td><td>No message could be delivered. Nothing was charged; try again later.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="privacy">Privacy</h2>
+      <ul>
+        <li>The API never returns interview content, summaries or quotes, and never returns the email address or mobile number you sent. Findings are in your workspace, in aggregate.</li>
+        <li>Send only what the invitation needs: a personal email address and/or mobile number, plus the optional segments. Do not send names or reasons for leaving.</li>
+        <li>Use an opaque reference as <code>externalId</code>. It links the invitation to your record so you can follow progress; PartWays does not use it in findings.</li>
+      </ul>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">PartWays is an independent interviewing service. It conducts exit interviews on behalf of the organisations that commission them. · <a href="/">partways.org</a></div>
+  </footer>
+</body>
+</html>
