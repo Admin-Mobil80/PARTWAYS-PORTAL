@@ -42,7 +42,6 @@ export async function render(el, _params, query = {}) {
 
   // While self-service buying is off, credits are added by PartWays: no prices or packs here.
   const selfServe = b.selfServe !== false;
-  const contact = b.contactEmail ? h('a', { href: `mailto:${b.contactEmail}?subject=${encodeURIComponent('PartWays credits')}` }, b.contactEmail) : 'PartWays';
   const best = selfServe ? Math.min(...b.packs.map((p) => p.usd / p.credits)) : 0;
   mount(el,
     pageHead('Credits and billing', 'One credit sends one interview invitation. Reminders, previews and reports are free.'),
@@ -60,8 +59,7 @@ export async function render(el, _params, query = {}) {
           ? h('p', { class: 'ink2', style: { margin: 0 } }, `You asked for ${b.request.credits ? plural(b.request.credits, 'more credit') : 'more credits'} on ${fmt.dateTime(b.request.at)}. The PartWays team will add them shortly; you can update the request if you need to.`)
           : h('p', { class: 'ink2', style: { margin: 0 } }, 'Credits are added by the PartWays team. Send a request and we will add them to your workspace.'),
         h('div', { class: 'row' },
-          h('button', { class: 'btn primary', type: 'button', onclick: () => requestCredits(b, () => render(el, [], {})) }, b.request ? 'Update my request' : 'Request more credits'),
-          h('span', { class: 'small muted' }, 'Or email ', contact, '.'))) : null,
+          h('button', { class: 'btn primary', type: 'button', onclick: () => requestCredits(b, () => render(el, [], {})) }, b.request ? 'Update my request' : 'Request more credits'))) : null,
       !selfServe ? null : h('section', { class: 'stack' }, h('h2', 'Buy credits'),
         h('div', { class: 'packs' }, b.packs.map((p) => {
           const btn = h('button', { class: 'btn primary', type: 'button', onclick: () => buy(p, btn) }, `Buy ${p.credits} credits`);
